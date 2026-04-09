@@ -15,7 +15,16 @@
         .btn-yellow { background-color: var(--brand-yellow); color: #000; transition: all 0.2s; }
         .btn-yellow:hover { background-color: #eab308; transform: translateY(-2px); }
         .btn-dark { background-color: #1a1a1a; color: white; border: 1px solid #333; transition: all 0.2s; }
-        .status-badge { padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; }
+        .status-badge {
+    display: inline-block;
+    padding: 4px 12px;       /* 增加左右內距 */
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    white-space: nowrap;     /* 強制不換行 */
+    min-width: 60px;         /* 設定最小寬度 */
+    text-align: center;
+}
         .status-pending { background-color: #423b00; color: #facc15; border: 1px solid #facc15; }
         .status-approved { background-color: #064e3b; color: #34d399; border: 1px solid #059669; }
         input, select, textarea { background-color: #2d2d2d !important; border-color: #444 !important; color: white !important; width: 100%; border-radius: 8px; padding: 10px; outline: none; }
@@ -147,54 +156,65 @@
             }
         }
 
-        function renderTable() {
-            const tbody = document.getElementById('dataTable');
-            tbody.innerHTML = '';
-            
-records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
-    const tr = document.createElement('tr');
-    const isStaff = currentRole === 'staff' || currentRole === 'admin';
-    const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
+function renderTable() {
+    const tbody = document.getElementById('dataTable');
+    tbody.innerHTML = '';
     
-    // 【關鍵修正】：強制轉換狀態字串，處理舊資料的 "否" 或 "是"
-    let rawStatus = String(row.status || "").trim();
-    let statusText = rawStatus;
-    
-    // 兼容舊資料邏輯
-    if (rawStatus === "否" || rawStatus === "") statusText = "待覆核";
-    if (rawStatus === "是") statusText = "已出車";
+    // 定義時間格式化小工具
+    const formatTime = (timeStr) => {
+        if (!timeStr || timeStr === '尚未返回') return '--';
+        const d = new Date(timeStr);
+        if (isNaN(d.getTime())) return timeStr.replace('T', ' ').substring(0, 16); // 預防格式出錯
+        
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${y}-${m}-${day} ${hh}:${mm}`; // 輸出：2026-04-09 07:50
+    };
 
-    let statusClass = "status-pending";
-    if (statusText === '已出車' || statusText === '已結案') {
-        statusClass = "status-approved";
-    }
+    records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
+        const tr = document.createElement('tr');
+        const isStaff = currentRole === 'staff' || currentRole === 'admin';
+        const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
+        
+        let statusText = String(row.status || "").trim();
+        if (statusText === "否" || !statusText) statusText = "待覆核";
+        if (statusText === "1775719962945") statusText = "待覆核"; // 處理可能殘留的 ID 錯誤
 
-    // 【按鈕權限邏輯修正】
-    // 只要狀態包含 "待覆核" 或 "待結案"，主管就能看到覆核按鈕
-    const canApprove = isBoss && (statusText === '待覆核' || statusText === '待結案');
-    const canMarkArrived = isStaff && statusText === '已出車';
-                tr.innerHTML = `
-                    <td class="px-5 py-5 text-white">${row.outTime ? row.outTime.replace('T', ' ') : '--'}</td>
-                    <td class="px-5 py-5 text-gray-400">${row.returnTime ? row.returnTime.replace('T', ' ') : '尚未返回'}</td>
-                    <td class="px-5 py-5">
-                        <div class="text-white">${row.driver}</div>
-                        <div class="text-xs text-yellow-500">${row.car}</div>
-                    </td>
-                    <td class="px-5 py-5">
-                        <div class="max-w-[150px] truncate cursor-pointer hover:text-yellow-400 underline decoration-dotted" onclick="alert('完整行程目的地：\\n${row.purpose}')">
-                            ${row.purpose}
-                        </div>
-                    </td>
-                    <td class="px-5 py-5"><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td class="px-5 py-5 text-center space-x-2">
-                        ${canApprove ? `<button onclick="approveRecord('${row.id}')" class="bg-yellow-400 text-black px-3 py-1 rounded-lg font-bold">覆核</button>` : ''}
-                        ${canMarkArrived ? `<button onclick="markArrived('${row.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg font-bold">已抵達</button>` : ''}
-                        ${isBoss ? `<button onclick="deleteRecord('${row.id}')" class="text-red-400 text-xs">刪除</button>` : ''}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        let statusClass = "status-pending";
+        if (statusText === '已出車' || statusText === '已結案') statusClass = "status-approved";
+
+        const canApprove = isBoss && (statusText === '待覆核' || statusText === '待結案');
+        const canMarkArrived = isStaff && statusText === '已出車';
+
+        tr.innerHTML = `
+            <td class="px-5 py-5 text-white text-xs">${formatTime(row.outTime)}</td>
+            <td class="px-5 py-5 text-gray-400 text-xs">${row.returnTime ? formatTime(row.returnTime) : '尚未返回'}</td>
+            <td class="px-5 py-5">
+                <div class="text-white">${row.driver}</div>
+                <div class="text-xs text-yellow-500">${row.car}</div>
+            </td>
+            <td class="px-5 py-5">
+                <div class="max-w-[150px] truncate cursor-pointer hover:text-yellow-400 underline decoration-dotted" onclick="alert('完整目的地：\\n${row.purpose}')">
+                    ${row.purpose}
+                </div>
+            </td>
+            <td class="px-5 py-5">
+                <span class="status-badge ${statusClass} whitespace-nowrap inline-block">
+                    ${statusText}
+                </span>
+            </td>
+            <td class="px-5 py-5 text-center space-x-2">
+                ${canApprove ? `<button onclick="approveRecord('${row.id}')" class="bg-yellow-400 text-black px-3 py-1 rounded-lg font-bold">覆核</button>` : ''}
+                ${canMarkArrived ? `<button onclick="markArrived('${row.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg font-bold">已抵達</button>` : ''}
+                ${isBoss ? `<button onclick="deleteRecord('${row.id}')" class="text-red-400 text-xs block mt-2 mx-auto">刪除</button>` : ''}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
         async function callBackend(data) {
             document.getElementById('syncLoader').classList.remove('hidden');
@@ -232,13 +252,26 @@ records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row =>
             showToast("覆核完成");
         }
 
-        async function markArrived(id) {
-            const time = prompt("請輸入返回日期與時間 (預設現在時間):", new Date().toLocaleString('sv-SE').replace(' ', 'T').substring(0, 16));
-            if(time) {
-                await callBackend({ action: 'updateReturn', id: id, returnTime: time.replace('T', ' ') });
-                showToast("已記錄抵達時間，請主管結案");
-            }
-        }
+async function markArrived(id) {
+    // 建立一個臨時的日期選擇器
+    const tempInput = document.createElement('input');
+    tempInput.type = 'datetime-local';
+    
+    // 預設為現在時間
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    tempInput.value = now.toISOString().slice(0, 16);
+
+    // 提示使用者
+    const userTime = prompt("請輸入返回日期與時間：\n格式例：2026-04-09T13:00\n(建議直接複製下方預設時間並修改即可)", tempInput.value);
+    
+    if (userTime) {
+        // 將使用者輸入或選取的 T 換成空格存入資料庫
+        const formattedTime = userTime.replace('T', ' ');
+        await callBackend({ action: 'updateReturn', id: id, returnTime: formattedTime });
+        showToast("已更新返回時間，等待主管結案");
+    }
+}
 
         async function deleteRecord(id) {
             if(confirm("確定刪除此紀錄？")) {
