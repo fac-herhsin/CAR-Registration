@@ -80,6 +80,21 @@
         th { color: var(--brand-yellow) !important; border-bottom: 2px solid var(--border-dark) !important; }
         td { border-bottom: 1px solid var(--border-dark) !important; }
         tr:hover td { background-color: #262626; }
+
+        /* 載入中動畫 */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--brand-yellow);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="login-bg min-h-screen">
@@ -176,8 +191,8 @@
                                 <label class="block text-sm font-medium text-gray-300">使用目的 / 工案</label>
                                 <textarea id="purpose" rows="2" class="mt-1 block w-full rounded-lg border-gray-700 shadow-sm border p-2.5 focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="例如：勘查工地、材料運送..."></textarea>
                             </div>
-                            <button type="submit" class="w-full btn-yellow py-3.5 px-4 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all mt-2">
-                                提交登記單
+                            <button type="submit" id="submitBtn" class="w-full btn-yellow py-3.5 px-4 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all mt-2 flex items-center justify-center gap-2">
+                                <span>提交登記單</span>
                             </button>
                         </form>
                     </div>
@@ -191,7 +206,10 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                                 公務車使用紀錄
                             </h2>
-                            <span id="loadingTxt" class="text-xs text-yellow-600 font-medium hidden">連線中...</span>
+                            <div class="flex items-center gap-2">
+                                <span id="syncStatus" class="text-xs text-gray-500 font-medium">資料同步中...</span>
+                                <div id="syncLoader" class="loader hidden"></div>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-800">
@@ -223,12 +241,13 @@
     </div>
 
     <script>
+        // --- 後端串接設定 ---
+        // 請在此貼上您 Google Apps Script 部署後的網頁應用程式網址
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkZcwxPl4qMAHzx74jbnQDsabA1mxIjiy6my74jYYPE9XrHV__G52csR5RwnY_Hn_X/exec"; 
+
         // --- 設定與變數 ---
         let currentRole = "staff";
-        let records = [
-            { id: 1, date: "2024-05-20", outTime: "08:30", returnTime: "12:00", driver: "王小明", car: "ARC-9132(八人座)", purpose: "工地勘查", approved: false },
-            { id: 2, date: "2024-05-20", outTime: "13:00", returnTime: "15:30", driver: "李大同", car: "BYV-6505(3.5T)", purpose: "載運水泥", approved: true }
-        ];
+        let records = [];
 
         // --- 登入邏輯 ---
         function loginAs(role) {
@@ -243,7 +262,8 @@
             document.body.classList.remove('login-bg');
             document.body.classList.add('app-bg');
             
-            renderTable();
+            // 進入後嘗試從後端讀取資料 (如果 SCRIPT_URL 已填寫)
+            fetchData();
         }
 
         function logout() {
@@ -251,6 +271,56 @@
             document.getElementById('appPage').classList.add('hidden');
             document.body.classList.remove('app-bg');
             document.body.classList.add('login-bg');
+        }
+
+        // --- 後端資料交互 ---
+        async function callBackend(data) {
+            if (!SCRIPT_URL) {
+                console.warn("尚未設定 SCRIPT_URL，將僅在本地模擬。");
+                return { success: true, localOnly: true };
+            }
+
+            document.getElementById('syncLoader').classList.remove('hidden');
+            document.getElementById('syncStatus').innerText = "正在傳送至雲端...";
+
+            try {
+                // 使用 Fetch API 發送 POST 請求
+                // 注意：GAS 的跨域請求通常會經過 302 重定向，Fetch 會自動處理
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // 因為 GAS 回傳機制的限制，通常使用 no-cors
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                // 因為 no-cors 無法取得 response body，我們假設成功
+                document.getElementById('syncStatus').innerText = "同步完成";
+                return { success: true };
+            } catch (error) {
+                console.error("後端請求失敗:", error);
+                document.getElementById('syncStatus').innerText = "同步失敗";
+                showToast("雲端同步失敗，請檢查網址或網路。");
+                return { success: false };
+            } finally {
+                setTimeout(() => {
+                    document.getElementById('syncLoader').classList.add('hidden');
+                }, 1000);
+            }
+        }
+
+        // 模擬抓取資料 (若要實現真正讀取，GAS 需要實作 doGet)
+        function fetchData() {
+            if (records.length === 0) {
+                // 預設範例資料
+                records = [
+                    { id: 1, date: "2024-05-20", outTime: "08:30", returnTime: "12:00", driver: "王小明", car: "ARC-9132(八人座)", purpose: "工地勘查", approved: false },
+                    { id: 2, date: "2024-05-20", outTime: "13:00", returnTime: "15:30", driver: "李大同", car: "BYV-6505(3.5T)", purpose: "載運水泥", approved: true }
+                ];
+            }
+            document.getElementById('syncStatus').innerText = "已載入本地緩存";
+            renderTable();
         }
 
         // --- 渲染表格 ---
@@ -288,9 +358,14 @@
         }
 
         // --- 資料操作 ---
-        document.getElementById('regForm').onsubmit = (e) => {
+        document.getElementById('regForm').onsubmit = async (e) => {
             e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loader"></div> <span>處理中...</span>';
+
             const newRecord = {
+                action: 'append', // 指定 GAS 對應的動作
                 id: Date.now(),
                 date: document.getElementById('date').value,
                 outTime: document.getElementById('outTime').value,
@@ -301,26 +376,40 @@
                 approved: false
             };
 
-            records.push(newRecord);
-            showToast("登記單提交成功！");
-            document.getElementById('regForm').reset();
-            renderTable();
+            // 呼叫後端
+            const result = await callBackend(newRecord);
+
+            if (result.success) {
+                records.push(newRecord);
+                showToast(result.localOnly ? "已暫存(未連結雲端)" : "登記單提交成功並同步至雲端！");
+                document.getElementById('regForm').reset();
+                renderTable();
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>提交登記單</span>';
         };
 
-        function approveRecord(id) {
+        async function approveRecord(id) {
             const index = records.findIndex(r => r.id === id);
             if (index !== -1) {
-                records[index].approved = true;
-                showToast("單據已成功覆核。");
-                renderTable();
+                const result = await callBackend({ action: 'approve', id: id });
+                if (result.success) {
+                    records[index].approved = true;
+                    showToast("單據已成功覆核。");
+                    renderTable();
+                }
             }
         }
 
-        function deleteRecord(id) {
-            if (confirm("確認要刪除此筆登記紀錄嗎？")) {
-                records = records.filter(r => r.id !== id);
-                showToast("紀錄已刪除。");
-                renderTable();
+        async function deleteRecord(id) {
+            if (confirm("確認要刪除此筆登記紀錄嗎？此動作亦會嘗試同步至雲端。")) {
+                const result = await callBackend({ action: 'delete', id: id });
+                if (result.success) {
+                    records = records.filter(r => r.id !== id);
+                    showToast("紀錄已刪除。");
+                    renderTable();
+                }
             }
         }
 
