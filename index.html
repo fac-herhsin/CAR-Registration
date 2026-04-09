@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>何鑫實業 - 公務車登記系統 (流程升級版)</title>
+    <title>何鑫實業 - 公務車登記系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
@@ -15,21 +15,30 @@
         .btn-yellow { background-color: var(--brand-yellow); color: #000; transition: all 0.2s; }
         .btn-yellow:hover { background-color: #eab308; transform: translateY(-2px); }
         .btn-dark { background-color: #1a1a1a; color: white; border: 1px solid #333; transition: all 0.2s; }
+        
+        /* 狀態標籤優化：確保不換行、排版整齊 */
         .status-badge {
-    display: inline-block;
-    padding: 4px 12px;       /* 增加左右內距 */
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    white-space: nowrap;     /* 強制不換行 */
-    min-width: 60px;         /* 設定最小寬度 */
-    text-align: center;
-}
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            white-space: nowrap;
+            min-width: 80px;
+            text-align: center;
+            line-height: 1;
+        }
         .status-pending { background-color: #423b00; color: #facc15; border: 1px solid #facc15; }
         .status-approved { background-color: #064e3b; color: #34d399; border: 1px solid #059669; }
+        
         input, select, textarea { background-color: #2d2d2d !important; border-color: #444 !important; color: white !important; width: 100%; border-radius: 8px; padding: 10px; outline: none; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--brand-yellow); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 時間欄位字體優化 */
+        .time-text { font-family: monospace; font-size: 0.85rem; color: #e5e7eb; }
     </style>
 </head>
 <body class="login-bg min-h-screen">
@@ -82,7 +91,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm text-gray-300">使用目的 / 目的地 (可輸入多點)</label>
+                                <label class="block text-sm text-gray-300">使用目的 / 目的地</label>
                                 <textarea id="purpose" rows="3" placeholder="例如：工地勘查、材料運送..." required></textarea>
                             </div>
                             <button type="submit" id="submitBtn" class="w-full btn-yellow py-3 font-bold rounded-xl mt-2">提交登記單</button>
@@ -106,7 +115,7 @@
                                         <th class="px-5 py-4 text-left">外出時間</th>
                                         <th class="px-5 py-4 text-left">返回時間</th>
                                         <th class="px-5 py-4 text-left">駕駛/車輛</th>
-                                        <th class="px-5 py-4 text-left">目的(點選展開)</th>
+                                        <th class="px-5 py-4 text-left">目的</th>
                                         <th class="px-5 py-4 text-left">狀態</th>
                                         <th class="px-5 py-4 text-center">操作</th>
                                     </tr>
@@ -120,15 +129,27 @@
         </div>
     </div>
 
+    <div id="returnModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-[100] p-4">
+        <div class="card w-full max-w-sm border-t-4 border-blue-500 p-6">
+            <h3 class="text-xl font-bold text-white mb-2">還車登記</h3>
+            <p class="text-gray-400 text-sm mb-6">請選擇實際返回廠區的時間：</p>
+            <input type="datetime-local" id="modalReturnTime" class="mb-6 block w-full">
+            <div class="flex gap-3">
+                <button onclick="closeReturnModal()" class="flex-1 btn-dark py-3 rounded-xl text-sm">取消</button>
+                <button id="confirmReturnBtn" class="flex-1 bg-blue-500 text-white font-bold py-3 rounded-xl hover:bg-blue-600 text-sm">確認送出</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="fixed bottom-8 right-8 transform translate-y-24 opacity-0 transition-all duration-300 bg-yellow-400 text-black px-6 py-3 rounded-2xl z-50 font-bold">
         <span id="toastMsg">訊息提示</span>
     </div>
 
     <script>
-        // --- 設定 ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkZcwxPl4qMAHzx74jbnQDsabA1mxIjiy6my74jYYPE9XrHV__G52csR5RwnY_Hn_X/exec"; 
         let currentRole = "staff";
         let records = [];
+        let currentEditingId = null;
 
         function loginAs(role) {
             currentRole = role;
@@ -156,65 +177,60 @@
             }
         }
 
-function renderTable() {
-    const tbody = document.getElementById('dataTable');
-    tbody.innerHTML = '';
-    
-    // 定義時間格式化小工具
-    const formatTime = (timeStr) => {
-        if (!timeStr || timeStr === '尚未返回') return '--';
-        const d = new Date(timeStr);
-        if (isNaN(d.getTime())) return timeStr.replace('T', ' ').substring(0, 16); // 預防格式出錯
-        
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
-        return `${y}-${m}-${day} ${hh}:${mm}`; // 輸出：2026-04-09 07:50
-    };
+        function renderTable() {
+            const tbody = document.getElementById('dataTable');
+            tbody.innerHTML = '';
+            
+            const formatTime = (timeStr) => {
+                if (!timeStr || timeStr === '尚未返回') return '--';
+                const d = new Date(timeStr);
+                if (isNaN(d.getTime())) return timeStr.replace('T', ' ').substring(0, 16);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mm = String(d.getMinutes()).padStart(2, '0');
+                return `${y}-${m}-${day} ${hh}:${mm}`;
+            };
 
-    records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
-        const tr = document.createElement('tr');
-        const isStaff = currentRole === 'staff' || currentRole === 'admin';
-        const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
-        
-        let statusText = String(row.status || "").trim();
-        if (statusText === "否" || !statusText) statusText = "待覆核";
-        if (statusText === "1775719962945") statusText = "待覆核"; // 處理可能殘留的 ID 錯誤
+            records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
+                const tr = document.createElement('tr');
+                const isStaff = currentRole === 'staff' || currentRole === 'admin';
+                const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
+                
+                let statusText = String(row.status || "").trim();
+                if (statusText === "否" || !statusText || statusText === "1775719962945") statusText = "待覆核";
 
-        let statusClass = "status-pending";
-        if (statusText === '已出車' || statusText === '已結案') statusClass = "status-approved";
+                let statusClass = "status-pending";
+                if (statusText === '已出車' || statusText === '已結案') statusClass = "status-approved";
 
-        const canApprove = isBoss && (statusText === '待覆核' || statusText === '待結案');
-        const canMarkArrived = isStaff && statusText === '已出車';
+                const canApprove = isBoss && (statusText === '待覆核' || statusText === '待結案');
+                const canMarkArrived = isStaff && statusText === '已出車';
 
-        tr.innerHTML = `
-            <td class="px-5 py-5 text-white text-xs">${formatTime(row.outTime)}</td>
-            <td class="px-5 py-5 text-gray-400 text-xs">${row.returnTime ? formatTime(row.returnTime) : '尚未返回'}</td>
-            <td class="px-5 py-5">
-                <div class="text-white">${row.driver}</div>
-                <div class="text-xs text-yellow-500">${row.car}</div>
-            </td>
-            <td class="px-5 py-5">
-                <div class="max-w-[150px] truncate cursor-pointer hover:text-yellow-400 underline decoration-dotted" onclick="alert('完整目的地：\\n${row.purpose}')">
-                    ${row.purpose}
-                </div>
-            </td>
-            <td class="px-5 py-5">
-                <span class="status-badge ${statusClass} whitespace-nowrap inline-block">
-                    ${statusText}
-                </span>
-            </td>
-            <td class="px-5 py-5 text-center space-x-2">
-                ${canApprove ? `<button onclick="approveRecord('${row.id}')" class="bg-yellow-400 text-black px-3 py-1 rounded-lg font-bold">覆核</button>` : ''}
-                ${canMarkArrived ? `<button onclick="markArrived('${row.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg font-bold">已抵達</button>` : ''}
-                ${isBoss ? `<button onclick="deleteRecord('${row.id}')" class="text-red-400 text-xs block mt-2 mx-auto">刪除</button>` : ''}
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+                tr.innerHTML = `
+                    <td class="px-5 py-5 time-text">${formatTime(row.outTime)}</td>
+                    <td class="px-5 py-5 time-text text-gray-500">${row.returnTime ? formatTime(row.returnTime) : '尚未返回'}</td>
+                    <td class="px-5 py-5">
+                        <div class="text-white">${row.driver}</div>
+                        <div class="text-xs text-yellow-500">${row.car}</div>
+                    </td>
+                    <td class="px-5 py-5">
+                        <div class="max-w-[120px] truncate cursor-pointer hover:text-yellow-400 underline decoration-dotted" onclick="alert('目的地：\\n${row.purpose}')">
+                            ${row.purpose}
+                        </div>
+                    </td>
+                    <td class="px-5 py-5">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </td>
+                    <td class="px-5 py-5 text-center space-x-1">
+                        ${canApprove ? `<button onclick="approveRecord('${row.id}')" class="bg-yellow-400 text-black px-3 py-1 rounded-lg font-bold text-xs">覆核</button>` : ''}
+                        ${canMarkArrived ? `<button onclick="markArrived('${row.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg font-bold text-xs">已抵達</button>` : ''}
+                        ${isBoss ? `<button onclick="deleteRecord('${row.id}')" class="text-red-400 text-[10px] block mt-2 mx-auto">刪除</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
         async function callBackend(data) {
             document.getElementById('syncLoader').classList.remove('hidden');
@@ -242,7 +258,7 @@ function renderTable() {
             };
             if(await callBackend(data)) {
                 document.getElementById('regForm').reset();
-                showToast("提交成功，請主管覆核派車");
+                showToast("提交成功，請主管覆核");
             }
             btn.disabled = false;
         };
@@ -252,26 +268,27 @@ function renderTable() {
             showToast("覆核完成");
         }
 
-async function markArrived(id) {
-    // 建立一個臨時的日期選擇器
-    const tempInput = document.createElement('input');
-    tempInput.type = 'datetime-local';
-    
-    // 預設為現在時間
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    tempInput.value = now.toISOString().slice(0, 16);
+        // --- 彈出式視窗邏輯 ---
+        function markArrived(id) {
+            currentEditingId = id;
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('modalReturnTime').value = now.toISOString().slice(0, 16);
+            document.getElementById('returnModal').classList.remove('hidden');
+        }
 
-    // 提示使用者
-    const userTime = prompt("請輸入返回日期與時間：\n格式例：2026-04-09T13:00\n(建議直接複製下方預設時間並修改即可)", tempInput.value);
-    
-    if (userTime) {
-        // 將使用者輸入或選取的 T 換成空格存入資料庫
-        const formattedTime = userTime.replace('T', ' ');
-        await callBackend({ action: 'updateReturn', id: id, returnTime: formattedTime });
-        showToast("已更新返回時間，等待主管結案");
-    }
-}
+        function closeReturnModal() {
+            document.getElementById('returnModal').classList.add('hidden');
+            currentEditingId = null;
+        }
+
+        document.getElementById('confirmReturnBtn').onclick = async () => {
+            const timeValue = document.getElementById('modalReturnTime').value;
+            if (!timeValue || !currentEditingId) return;
+            closeReturnModal();
+            await callBackend({ action: 'updateReturn', id: currentEditingId, returnTime: timeValue.replace('T', ' ') });
+            showToast("返回登記成功");
+        };
 
         async function deleteRecord(id) {
             if(confirm("確定刪除此紀錄？")) {
