@@ -151,20 +151,28 @@
             const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
             
-            records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
-                const tr = document.createElement('tr');
-                const isStaff = currentRole === 'staff' || currentRole === 'admin';
-                const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
-                
-                // 狀態樣式邏輯
-                let statusClass = "status-pending";
-                let statusText = row.status;
-                if(row.status === '已出車' || row.status === '已結案') statusClass = "status-approved";
+records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
+    const tr = document.createElement('tr');
+    const isStaff = currentRole === 'staff' || currentRole === 'admin';
+    const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
+    
+    // 【關鍵修正】：強制轉換狀態字串，處理舊資料的 "否" 或 "是"
+    let rawStatus = String(row.status || "").trim();
+    let statusText = rawStatus;
+    
+    // 兼容舊資料邏輯
+    if (rawStatus === "否" || rawStatus === "") statusText = "待覆核";
+    if (rawStatus === "是") statusText = "已出車";
 
-                // 按鈕權限邏輯
-                const canApprove = isBoss && (row.status === '待覆核' || row.status === '待結案');
-                const canMarkArrived = isStaff && row.status === '已出車';
+    let statusClass = "status-pending";
+    if (statusText === '已出車' || statusText === '已結案') {
+        statusClass = "status-approved";
+    }
 
+    // 【按鈕權限邏輯修正】
+    // 只要狀態包含 "待覆核" 或 "待結案"，主管就能看到覆核按鈕
+    const canApprove = isBoss && (statusText === '待覆核' || statusText === '待結案');
+    const canMarkArrived = isStaff && statusText === '已出車';
                 tr.innerHTML = `
                     <td class="px-5 py-5 text-white">${row.outTime ? row.outTime.replace('T', ' ') : '--'}</td>
                     <td class="px-5 py-5 text-gray-400">${row.returnTime ? row.returnTime.replace('T', ' ') : '尚未返回'}</td>
