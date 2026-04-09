@@ -3,184 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>何鑫實業 - 公務車登記系統</title>
+    <title>何鑫實業 - 公務車登記系統 (流程升級版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        
-        :root {
-            --brand-yellow: #facc15;
-            --brand-dark: #121212;
-            --card-dark: #1e1e1e;
-            --border-dark: #333333;
-        }
-
-        body { 
-            font-family: 'Noto Sans TC', sans-serif; 
-            transition: all 0.3s; 
-            background-color: var(--brand-dark);
-            color: #ffffff;
-        }
-
+        :root { --brand-yellow: #facc15; --brand-dark: #121212; --card-dark: #1e1e1e; --border-dark: #333333; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--brand-dark); color: #ffffff; }
         .login-bg { background-color: #000000; }
         .app-bg { background-color: var(--brand-dark); }
-        
-        .card { 
-            background: var(--card-dark); 
-            border-radius: 16px; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--border-dark);
-        }
-
-        .btn-yellow { 
-            background-color: var(--brand-yellow); 
-            color: #000; 
-            transition: all 0.2s; 
-        }
-        .btn-yellow:hover { 
-            background-color: #eab308; 
-            transform: translateY(-2px);
-        }
-
-        .btn-dark { 
-            background-color: #1a1a1a; 
-            color: white; 
-            border: 1px solid #333; 
-            transition: all 0.2s; 
-        }
-        .btn-dark:hover { 
-            background-color: #262626; 
-            border-color: var(--brand-yellow); 
-        }
-
-        .status-badge { 
-            padding: 2px 10px; 
-            border-radius: 9999px; 
-            font-size: 0.75rem; 
-            font-weight: bold;
-        }
-        
+        .card { background: var(--card-dark); border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); border: 1px solid var(--border-dark); }
+        .btn-yellow { background-color: var(--brand-yellow); color: #000; transition: all 0.2s; }
+        .btn-yellow:hover { background-color: #eab308; transform: translateY(-2px); }
+        .btn-dark { background-color: #1a1a1a; color: white; border: 1px solid #333; transition: all 0.2s; }
+        .status-badge { padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; }
         .status-pending { background-color: #423b00; color: #facc15; border: 1px solid #facc15; }
         .status-approved { background-color: #064e3b; color: #34d399; border: 1px solid #059669; }
-
-        .text-yellow-brand { color: var(--brand-yellow); }
-        
-        /* 表單輸入框深色化 */
-        input, select, textarea {
-            background-color: #2d2d2d !important;
-            border-color: #444 !important;
-            color: white !important;
-        }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--brand-yellow) !important;
-            ring-color: var(--brand-yellow) !important;
-        }
-
-        /* 表格樣式優化 */
-        th { color: var(--brand-yellow) !important; border-bottom: 2px solid var(--border-dark) !important; }
-        td { border-bottom: 1px solid var(--border-dark) !important; }
-        tr:hover td { background-color: #262626; }
-
-        /* 載入中動畫 */
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--brand-yellow);
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        input, select, textarea { background-color: #2d2d2d !important; border-color: #444 !important; color: white !important; width: 100%; border-radius: 8px; padding: 10px; outline: none; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--brand-yellow); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="login-bg min-h-screen">
 
-    <!-- 1. 登入入口畫面 -->
     <div id="loginPage" class="flex flex-col items-center justify-center min-h-screen p-4">
-        <!-- Logo 圖示 -->
-        <div class="w-24 h-24 bg-yellow-400 rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(250,204,21,0.4)]">
+        <div class="w-24 h-24 bg-yellow-400 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1" />
             </svg>
         </div>
-
-        <!-- 標題 -->
-        <h1 class="text-3xl font-bold text-white mb-2 tracking-widest text-center">何鑫實業股份有限公司</h1>
-        <p class="text-yellow-brand text-lg font-medium mb-12 tracking-[0.2em]">公務車登記系統</p>
-
-        <!-- 入口按鈕群 -->
+        <h1 class="text-3xl font-bold mb-2">何鑫實業股份有限公司</h1>
+        <p class="text-yellow-400 text-lg mb-12">公務車登記系統</p>
         <div class="w-full max-w-xs space-y-4">
-            <button onclick="loginAs('staff')" class="w-full btn-dark py-4 rounded-2xl text-lg font-medium shadow-lg hover:shadow-yellow-400/10">
-                廠務人員入口
-            </button>
-            <button onclick="loginAs('supervisor')" class="w-full btn-dark py-4 rounded-2xl text-lg font-medium shadow-lg hover:shadow-yellow-400/10">
-                廠務主管入口
-            </button>
-            <button onclick="loginAs('admin')" class="w-full btn-dark py-4 rounded-2xl text-lg font-medium shadow-lg hover:shadow-yellow-400/10">
-                管理員控制台
-            </button>
+            <button onclick="loginAs('staff')" class="w-full btn-dark py-4 rounded-2xl">廠務人員入口</button>
+            <button onclick="loginAs('supervisor')" class="w-full btn-dark py-4 rounded-2xl">廠務主管入口</button>
+            <button onclick="loginAs('admin')" class="w-full btn-dark py-4 rounded-2xl">管理員控制台</button>
         </div>
     </div>
 
-    <!-- 2. 主程式介面 -->
     <div id="appPage" class="hidden p-4 md:p-8">
         <div class="max-w-6xl mx-auto">
-            <!-- 標題與登出 -->
-            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="p-2 bg-yellow-400 rounded-lg shadow-[0_0_10px_rgba(250,204,21,0.3)]">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-white">何鑫實業 - 公務車登記</h1>
-                        <p class="text-gray-400 text-sm">目前身份：<span id="displayRole" class="text-yellow-400 font-bold"></span></p>
-                    </div>
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-xl font-bold">何鑫實業 - 公務車管理</h1>
+                    <p class="text-gray-400 text-sm">目前身份：<span id="displayRole" class="text-yellow-400 font-bold"></span></p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="logout()" class="text-sm font-medium text-gray-300 hover:text-yellow-400 flex items-center gap-1 transition-colors px-4 py-2 border border-gray-700 rounded-xl bg-gray-800 shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        返回入口選單
-                    </button>
-                </div>
+                <button onclick="logout()" class="px-4 py-2 border border-gray-700 rounded-xl bg-gray-800 text-sm">返回入口</button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- 左側：新增表單 -->
                 <div class="lg:col-span-1">
-                    <div class="card p-6 sticky top-8 border-t-4 border-yellow-400">
-                        <h2 class="text-lg font-bold mb-6 flex items-center gap-2 text-yellow-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                            新增登記單
-                        </h2>
+                    <div class="card p-6 border-t-4 border-yellow-400">
+                        <h2 class="text-lg font-bold mb-6 text-yellow-400">新增登記單</h2>
                         <form id="regForm" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-300">使用日期</label>
-                                <input type="date" id="date" required class="mt-1 block w-full rounded-lg border-gray-700 shadow-sm border p-2.5 focus:ring-2 focus:ring-yellow-500 outline-none">
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300">外出時間</label>
-                                    <input type="time" id="outTime" required class="mt-1 block w-full rounded-lg border-gray-700 shadow-sm border p-2.5 focus:ring-2 focus:ring-yellow-500 outline-none">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300">返回時間</label>
-                                    <input type="time" id="returnTime" class="mt-1 block w-full rounded-lg border-gray-700 shadow-sm border p-2.5 focus:ring-2 focus:ring-yellow-500 outline-none">
-                                </div>
+                                <label class="block text-sm text-gray-300">預計外出時間</label>
+                                <input type="datetime-local" id="outTime" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-300">駕駛人員</label>
-                                <input type="text" id="driver" placeholder="請填寫姓名" class="mt-1 block w-full rounded-lg border-gray-700 shadow-sm border p-2.5 focus:ring-2 focus:ring-yellow-500 outline-none">
+                                <label class="block text-sm text-gray-300">駕駛人員</label>
+                                <input type="text" id="driver" placeholder="請輸入姓名" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-300">使用車輛</label>
-                                <select id="car" class="mt-1 block w-full rounded-lg border-gray-700 shadow-sm border p-2.5 focus:ring-2 focus:ring-yellow-500 outline-none">
+                                <label class="block text-sm text-gray-300">使用車輛</label>
+                                <select id="car" required>
                                     <option value="">請選擇車輛</option>
                                     <option value="ARC-9132(八人座)">ARC-9132(八人座)</option>
                                     <option value="AQW-3898(卡旺)">AQW-3898(卡旺)</option>
@@ -188,44 +73,36 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-300">使用目的 / 工案</label>
-                                <textarea id="purpose" rows="2" class="mt-1 block w-full rounded-lg border-gray-700 shadow-sm border p-2.5 focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="例如：勘查工地、材料運送..."></textarea>
+                                <label class="block text-sm text-gray-300">使用目的 / 目的地 (可輸入多點)</label>
+                                <textarea id="purpose" rows="3" placeholder="例如：工地勘查、材料運送..." required></textarea>
                             </div>
-                            <button type="submit" id="submitBtn" class="w-full btn-yellow py-3.5 px-4 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all mt-2 flex items-center justify-center gap-2">
-                                <span>提交登記單</span>
-                            </button>
+                            <button type="submit" id="submitBtn" class="w-full btn-yellow py-3 font-bold rounded-xl mt-2">提交登記單</button>
                         </form>
                     </div>
                 </div>
 
-                <!-- 右側：資料清單 -->
                 <div class="lg:col-span-2">
                     <div class="card overflow-hidden border-t-4 border-yellow-400">
-                        <div class="p-5 border-b border-gray-800 bg-[#252525] flex justify-between items-center">
-                            <h2 class="font-bold text-yellow-400 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                                公務車使用紀錄
-                            </h2>
+                        <div class="p-5 flex justify-between items-center bg-[#252525]">
+                            <h2 class="font-bold text-yellow-400">公務車使用紀錄</h2>
                             <div class="flex items-center gap-2">
-                                <span id="syncStatus" class="text-xs text-gray-500 font-medium">資料同步中...</span>
+                                <span id="syncStatus" class="text-xs text-gray-500">同步中...</span>
                                 <div id="syncLoader" class="loader hidden"></div>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-800">
-                                <thead class="bg-[#2a2a2a] text-xs font-bold uppercase">
+                            <table class="min-w-full">
+                                <thead class="bg-[#2a2a2a] text-xs text-yellow-400 uppercase">
                                     <tr>
-                                        <th class="px-5 py-4 text-left">日期</th>
-                                        <th class="px-5 py-4 text-left">時段</th>
+                                        <th class="px-5 py-4 text-left">外出時間</th>
+                                        <th class="px-5 py-4 text-left">返回時間</th>
                                         <th class="px-5 py-4 text-left">駕駛/車輛</th>
-                                        <th class="px-5 py-4 text-left">目的</th>
+                                        <th class="px-5 py-4 text-left">目的(點選展開)</th>
                                         <th class="px-5 py-4 text-left">狀態</th>
                                         <th class="px-5 py-4 text-center">操作</th>
                                     </tr>
                                 </thead>
-                                <tbody id="dataTable" class="divide-y divide-gray-800 text-sm">
-                                    <!-- 資料由 JS 動態生成 -->
-                                </tbody>
+                                <tbody id="dataTable" class="divide-y divide-gray-800 text-sm"></tbody>
                             </table>
                         </div>
                     </div>
@@ -234,207 +111,139 @@
         </div>
     </div>
 
-    <!-- 訊息提示視窗 -->
-    <div id="toast" class="fixed bottom-8 right-8 transform translate-y-24 opacity-0 transition-all duration-300 bg-yellow-400 text-black px-6 py-3.5 rounded-2xl shadow-[0_10px_30px_rgba(250,204,21,0.3)] z-50 font-bold flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+    <div id="toast" class="fixed bottom-8 right-8 transform translate-y-24 opacity-0 transition-all duration-300 bg-yellow-400 text-black px-6 py-3 rounded-2xl z-50 font-bold">
         <span id="toastMsg">訊息提示</span>
     </div>
 
     <script>
-        // --- 後端串接設定 ---
-        // 請在此貼上您 Google Apps Script 部署後的網頁應用程式網址
+        // --- 設定 ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkZcwxPl4qMAHzx74jbnQDsabA1mxIjiy6my74jYYPE9XrHV__G52csR5RwnY_Hn_X/exec"; 
-
-        // --- 設定與變數 ---
         let currentRole = "staff";
         let records = [];
 
-        // --- 登入邏輯 ---
         function loginAs(role) {
             currentRole = role;
-            
-            const roleNames = { 'staff': '廠務人員', 'supervisor': '廠務主管', 'admin': '管理員' };
-            document.getElementById('displayRole').innerText = roleNames[role];
-
+            document.getElementById('displayRole').innerText = role === 'staff' ? '廠務人員' : (role === 'supervisor' ? '廠務主管' : '管理員');
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('appPage').classList.remove('hidden');
-            
-            document.body.classList.remove('login-bg');
-            document.body.classList.add('app-bg');
-            
-            // 進入後嘗試從後端讀取資料 (如果 SCRIPT_URL 已填寫)
+            document.body.classList.replace('login-bg', 'app-bg');
             fetchData();
         }
 
-        function logout() {
-            document.getElementById('loginPage').classList.remove('hidden');
-            document.getElementById('appPage').classList.add('hidden');
-            document.body.classList.remove('app-bg');
-            document.body.classList.add('login-bg');
+        function logout() { location.reload(); }
+
+        async function fetchData() {
+            document.getElementById('syncLoader').classList.remove('hidden');
+            document.getElementById('syncStatus').innerText = "雲端同步中...";
+            try {
+                const response = await fetch(SCRIPT_URL);
+                records = await response.json();
+                renderTable();
+                document.getElementById('syncStatus').innerText = "資料已同步";
+            } catch (e) {
+                document.getElementById('syncStatus').innerText = "同步失敗";
+            } finally {
+                document.getElementById('syncLoader').classList.add('hidden');
+            }
         }
 
-        // --- 後端資料交互 ---
-async function callBackend(data) {
-    if (!SCRIPT_URL) {
-        console.warn("尚未設定 SCRIPT_URL，將僅在本地模擬。");
-        return { success: true, localOnly: true };
-    }
-
-    document.getElementById('syncLoader').classList.remove('hidden');
-    document.getElementById('syncStatus').innerText = "正在傳送至雲端...";
-
-    try {
-        // 【關鍵修改點 1】：移除 mode: 'no-cors'，讓瀏覽器可以處理重導向
-        // 並移除 Headers 中的 Content-Type，讓 GAS 較容易接收原始字串
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(data) 
-        });
-
-        // 【關鍵修改點 2】：新增這行！傳送完資料後，立刻重新抓取後端最新的所有資料
-        // 這樣可以確保 records 變數被更新，重新整理或新增後資料都不會消失
-        await fetchData(); 
-
-        document.getElementById('syncStatus').innerText = "同步完成";
-        return { success: true };
-    } catch (error) {
-        console.error("後端請求失敗:", error);
-        document.getElementById('syncStatus').innerText = "同步失敗";
-        showToast("雲端同步失敗，請檢查網路。");
-        return { success: false };
-    } finally {
-        setTimeout(() => {
-            document.getElementById('syncLoader').classList.add('hidden');
-        }, 1000);
-    }
-}
-        // 模擬抓取資料 (若要實現真正讀取，GAS 需要實作 doGet)
-async function fetchData() {
-    if (!SCRIPT_URL) return;
-
-    document.getElementById('syncLoader').classList.remove('hidden');
-    document.getElementById('syncStatus').innerText = "正在從雲端同步資料...";
-
-    try {
-        // GAS 的 doGet 不需要特別設定 header，直接 fetch 即可
-        const response = await fetch(SCRIPT_URL);
-        const data = await response.json();
-        
-        if (data && Array.isArray(data)) {
-            records = data; // 將後端抓到的資料存入 records
-            document.getElementById('syncStatus').innerText = "雲端同步完成";
-        }
-    } catch (error) {
-        console.error("抓取資料失敗:", error);
-        document.getElementById('syncStatus').innerText = "連線失敗，載入範例資料";
-        // 失敗時的備案：範例資料
-        records = [
-            { id: 1, date: "2024-05-20", outTime: "08:30", returnTime: "12:00", driver: "測試員", car: "範例車輛", purpose: "請檢查後端連線", approved: false }
-        ];
-    } finally {
-        renderTable();
-        document.getElementById('syncLoader').classList.add('hidden');
-    }
-}
-
-        // --- 渲染表格 ---
         function renderTable() {
             const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
-
-            records.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(row => {
+            
+            records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
                 const tr = document.createElement('tr');
+                const isStaff = currentRole === 'staff' || currentRole === 'admin';
+                const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
                 
-                const statusHtml = row.approved 
-                    ? `<span class="status-badge status-approved">已覆核</span>`
-                    : `<span class="status-badge status-pending">待覆核</span>`;
+                // 狀態樣式邏輯
+                let statusClass = "status-pending";
+                let statusText = row.status;
+                if(row.status === '已出車' || row.status === '已結案') statusClass = "status-approved";
 
-                const canApprove = (currentRole === 'supervisor' || currentRole === 'admin') && !row.approved;
-                const canDelete = (currentRole === 'admin');
+                // 按鈕權限邏輯
+                const canApprove = isBoss && (row.status === '待覆核' || row.status === '待結案');
+                const canMarkArrived = isStaff && row.status === '已出車';
 
                 tr.innerHTML = `
-                    <td class="px-5 py-5 whitespace-nowrap font-medium text-white">${row.date}</td>
-                    <td class="px-5 py-5 whitespace-nowrap text-gray-400">${row.outTime} - ${row.returnTime || '--'}</td>
+                    <td class="px-5 py-5 text-white">${row.outTime ? row.outTime.replace('T', ' ') : '--'}</td>
+                    <td class="px-5 py-5 text-gray-400">${row.returnTime ? row.returnTime.replace('T', ' ') : '尚未返回'}</td>
                     <td class="px-5 py-5">
-                        <div class="font-medium text-gray-200">${row.driver || '未填'}</div>
-                        <div class="text-xs text-yellow-500/70">${row.car || '未選車'}</div>
+                        <div class="text-white">${row.driver}</div>
+                        <div class="text-xs text-yellow-500">${row.car}</div>
                     </td>
-                    <td class="px-5 py-5 text-gray-300 max-w-[150px] truncate">${row.purpose}</td>
-                    <td class="px-5 py-5">${statusHtml}</td>
+                    <td class="px-5 py-5">
+                        <div class="max-w-[150px] truncate cursor-pointer hover:text-yellow-400 underline decoration-dotted" onclick="alert('完整行程目的地：\\n${row.purpose}')">
+                            ${row.purpose}
+                        </div>
+                    </td>
+                    <td class="px-5 py-5"><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td class="px-5 py-5 text-center space-x-2">
-                        ${canApprove ? `<button onclick="approveRecord(${row.id})" class="bg-yellow-400 text-black font-bold text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-white shadow-sm">覆核</button>` : ''}
-                        ${canDelete ? `<button onclick="deleteRecord(${row.id})" class="text-red-400 hover:text-red-300 font-bold text-xs px-2">刪除</button>` : ''}
-                        ${!canApprove && !canDelete ? '<span class="text-gray-600 text-xs">-</span>' : ''}
+                        ${canApprove ? `<button onclick="approveRecord('${row.id}')" class="bg-yellow-400 text-black px-3 py-1 rounded-lg font-bold">覆核</button>` : ''}
+                        ${canMarkArrived ? `<button onclick="markArrived('${row.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg font-bold">已抵達</button>` : ''}
+                        ${isBoss ? `<button onclick="deleteRecord('${row.id}')" class="text-red-400 text-xs">刪除</button>` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // --- 資料操作 ---
+        async function callBackend(data) {
+            document.getElementById('syncLoader').classList.remove('hidden');
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
+                await fetchData();
+                return { success: true };
+            } catch (e) {
+                showToast("連線異常");
+                return { success: false };
+            }
+        }
+
         document.getElementById('regForm').onsubmit = async (e) => {
             e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<div class="loader"></div> <span>處理中...</span>';
-
-            const newRecord = {
-                action: 'append', // 指定 GAS 對應的動作
-                id: Date.now(),
-                date: document.getElementById('date').value,
-                outTime: document.getElementById('outTime').value,
-                returnTime: document.getElementById('returnTime').value,
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            const data = {
+                action: 'append',
+                id: Date.now().toString(),
+                outTime: document.getElementById('outTime').value.replace('T', ' '),
                 driver: document.getElementById('driver').value,
                 car: document.getElementById('car').value,
-                purpose: document.getElementById('purpose').value,
-                approved: false
+                purpose: document.getElementById('purpose').value
             };
-
-            // 呼叫後端
-            const result = await callBackend(newRecord);
-
-            if (result.success) {
-                records.push(newRecord);
-                showToast(result.localOnly ? "已暫存(未連結雲端)" : "登記單提交成功並同步至雲端！");
+            if(await callBackend(data)) {
                 document.getElementById('regForm').reset();
-                renderTable();
+                showToast("提交成功，請主管覆核派車");
             }
-
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span>提交登記單</span>';
+            btn.disabled = false;
         };
 
         async function approveRecord(id) {
-            const index = records.findIndex(r => r.id === id);
-            if (index !== -1) {
-                const result = await callBackend({ action: 'approve', id: id });
-                if (result.success) {
-                    records[index].approved = true;
-                    showToast("單據已成功覆核。");
-                    renderTable();
-                }
+            await callBackend({ action: 'approve', id: id });
+            showToast("覆核完成");
+        }
+
+        async function markArrived(id) {
+            const time = prompt("請輸入返回日期與時間 (預設現在時間):", new Date().toLocaleString('sv-SE').replace(' ', 'T').substring(0, 16));
+            if(time) {
+                await callBackend({ action: 'updateReturn', id: id, returnTime: time.replace('T', ' ') });
+                showToast("已記錄抵達時間，請主管結案");
             }
         }
 
         async function deleteRecord(id) {
-            if (confirm("確認要刪除此筆登記紀錄嗎？此動作亦會嘗試同步至雲端。")) {
-                const result = await callBackend({ action: 'delete', id: id });
-                if (result.success) {
-                    records = records.filter(r => r.id !== id);
-                    showToast("紀錄已刪除。");
-                    renderTable();
-                }
+            if(confirm("確定刪除此紀錄？")) {
+                await callBackend({ action: 'delete', id: id });
+                showToast("紀錄已刪除");
             }
         }
 
-        // --- 訊息提示 ---
         function showToast(msg) {
-            const toast = document.getElementById('toast');
+            const t = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
-            toast.classList.remove('translate-y-24', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-24', 'opacity-0');
-            }, 3000);
+            t.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 3000);
         }
     </script>
 </body>
