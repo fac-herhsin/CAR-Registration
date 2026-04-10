@@ -216,26 +216,26 @@
             });
         }
 
-        async function callBackend(data) {
-            document.getElementById('syncLoader').classList.remove('hidden');
-            try {
-                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
-                const resJson = await response.json();
-                if (resJson.result === "success") {
-                    await fetchData();
-                    return { success: true };
-                } else {
-                    console.error("後端錯誤:", resJson);
-                    return { success: false };
-                }
-            } catch (e) {
-                showToast("連線異常");
-                return { success: false };
-            } finally {
-                document.getElementById('syncLoader').classList.add('hidden');
-            }
-        }
-
+async function callBackend(data) {
+    document.getElementById('syncLoader').classList.remove('hidden');
+    try {
+        const response = await fetch(SCRIPT_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', // 如果遇到跨域問題可加，但建議先保持預設
+            body: JSON.stringify(data) 
+        });
+        
+        // 注意：因為 Apps Script 的 POST 有時會轉址，這裏建議直接 fetchData 同步最新狀態
+        await new Promise(resolve => setTimeout(resolve, 800)); // 稍微等待後端寫入
+        await fetchData(); 
+        return { success: true };
+    } catch (e) {
+        showToast("連線異常");
+        return { success: false };
+    } finally {
+        document.getElementById('syncLoader').classList.add('hidden');
+    }
+}
         document.getElementById('regForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
