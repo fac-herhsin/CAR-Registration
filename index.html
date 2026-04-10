@@ -282,23 +282,27 @@
             currentEditingId = null;
         }
 
-       document.getElementById('confirmReturnBtn').onclick = async () => {
+document.getElementById('confirmReturnBtn').onclick = async () => {
     const timeValue = document.getElementById('modalReturnTime').value;
     if (!timeValue || !currentEditingId) return;
     
-    console.log("正在傳送 ID:", currentEditingId, "返回時間:", timeValue); 
-
     closeReturnModal();
-    // 呼叫後端
-    const result = await callBackend({ 
+    
+    // 呼叫後端並檢查真正的結果
+    const response = await callBackend({ 
         action: 'updateReturn', 
         id: currentEditingId, 
         returnTime: timeValue.replace('T', ' ') 
     });
     
-    // 關鍵：不管回傳什麼，都重新抓取資料刷新畫面
+    // 修改判斷邏輯
+    if (response.success) {
+        showToast("返回登記成功");
+    } else {
+        showToast("同步失敗，請稍後再試");
+    }
+    
     await fetchData(); 
-    showToast("返回登記成功");
 };
 
         async function deleteRecord(id) {
