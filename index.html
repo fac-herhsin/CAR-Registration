@@ -15,29 +15,12 @@
         .btn-yellow { background-color: var(--brand-yellow); color: #000; transition: all 0.2s; }
         .btn-yellow:hover { background-color: #eab308; transform: translateY(-2px); }
         .btn-dark { background-color: #1a1a1a; color: white; border: 1px solid #333; transition: all 0.2s; }
-        
-        /* 狀態標籤優化：確保不換行、排版整齊 */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            white-space: nowrap;
-            min-width: 80px;
-            text-align: center;
-            line-height: 1;
-        }
+        .status-badge { display: inline-flex; align-items: center; justify-content: center; padding: 6px 14px; border-radius: 9999px; font-size: 0.8rem; font-weight: bold; white-space: nowrap; min-width: 80px; text-align: center; line-height: 1; }
         .status-pending { background-color: #423b00; color: #facc15; border: 1px solid #facc15; }
         .status-approved { background-color: #064e3b; color: #34d399; border: 1px solid #059669; }
-        
         input, select, textarea { background-color: #2d2d2d !important; border-color: #444 !important; color: white !important; width: 100%; border-radius: 8px; padding: 10px; outline: none; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--brand-yellow); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* 時間欄位字體優化 */
         .time-text { font-family: monospace; font-size: 0.85rem; color: #e5e7eb; }
     </style>
 </head>
@@ -146,7 +129,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkZcwxPl4qMAHzx74jbnQDsabA1mxIjiy6my74jYYPE9XrHV__G52csR5RwnY_Hn_X/exec"; 
+        const SCRIPT_URL = "你的部署URL"; // 記得更換
         let currentRole = "staff";
         let records = [];
         let currentEditingId = null;
@@ -199,11 +182,12 @@
                 const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
                 
                 let statusText = String(row.status || "").trim();
-                if (statusText === "否" || !statusText || statusText === "1775719962945") statusText = "待覆核";
+                if (!statusText || statusText === "false") statusText = "待覆核";
 
                 let statusClass = "status-pending";
                 if (statusText === '已出車' || statusText === '已結案') statusClass = "status-approved";
 
+                // 修改後的按鈕顯示邏輯
                 const canApprove = isBoss && (statusText === '待覆核' || statusText === '待結案');
                 const canMarkArrived = isStaff && statusText === '已出車';
 
@@ -235,12 +219,20 @@
         async function callBackend(data) {
             document.getElementById('syncLoader').classList.remove('hidden');
             try {
-                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
-                await fetchData();
-                return { success: true };
+                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
+                const resJson = await response.json();
+                if (resJson.result === "success") {
+                    await fetchData();
+                    return { success: true };
+                } else {
+                    console.error("後端錯誤:", resJson);
+                    return { success: false };
+                }
             } catch (e) {
                 showToast("連線異常");
                 return { success: false };
+            } finally {
+                document.getElementById('syncLoader').classList.add('hidden');
             }
         }
 
@@ -256,7 +248,8 @@
                 car: document.getElementById('car').value,
                 purpose: document.getElementById('purpose').value
             };
-            if(await callBackend(data)) {
+            const res = await callBackend(data);
+            if(res.success) {
                 document.getElementById('regForm').reset();
                 showToast("提交成功，請主管覆核");
             }
@@ -264,11 +257,10 @@
         };
 
         async function approveRecord(id) {
-            await callBackend({ action: 'approve', id: id });
-            showToast("覆核完成");
+            const res = await callBackend({ action: 'approve', id: id });
+            if(res.success) showToast("覆核完成");
         }
 
-        // --- 彈出式視窗邏輯 ---
         function markArrived(id) {
             currentEditingId = id;
             const now = new Date();
@@ -282,33 +274,22 @@
             currentEditingId = null;
         }
 
-document.getElementById('confirmReturnBtn').onclick = async () => {
-    const timeValue = document.getElementById('modalReturnTime').value;
-    if (!timeValue || !currentEditingId) return;
-    
-    closeReturnModal();
-    
-    // 呼叫後端並檢查真正的結果
-    const response = await callBackend({ 
-        action: 'updateReturn', 
-        id: currentEditingId, 
-        returnTime: timeValue.replace('T', ' ') 
-    });
-    
-    // 修改判斷邏輯
-    if (response.success) {
-        showToast("返回登記成功");
-    } else {
-        showToast("同步失敗，請稍後再試");
-    }
-    
-    await fetchData(); 
-};
+        document.getElementById('confirmReturnBtn').onclick = async () => {
+            const timeValue = document.getElementById('modalReturnTime').value;
+            if (!timeValue || !currentEditingId) return;
+            closeReturnModal();
+            const res = await callBackend({ 
+                action: 'updateReturn', 
+                id: currentEditingId, 
+                returnTime: timeValue.replace('T', ' ') 
+            });
+            if(res.success) showToast("返回登記成功");
+        };
 
         async function deleteRecord(id) {
             if(confirm("確定刪除此紀錄？")) {
-                await callBackend({ action: 'delete', id: id });
-                showToast("紀錄已刪除");
+                const res = await callBackend({ action: 'delete', id: id });
+                if(res.success) showToast("紀錄已刪除");
             }
         }
 
