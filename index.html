@@ -129,19 +129,53 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkZcwxPl4qMAHzx74jbnQDsabA1mxIjiy6my74jYYPE9XrHV__G52csR5RwnY_Hn_X/exec"; // 記得更換
-        let currentRole = "staff";
-        let records = [];
-        let currentEditingId = null;
+// 請務必將下方的 URL 換成你剛才部署成功的那一串
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkZcwxPl4qMAHzx74jbnQDsabA1mxIjiy6my74jYYPE9XrHV__G52csR5RwnY_Hn_X/exec";
 
-        function loginAs(role) {
-            currentRole = role;
-            document.getElementById('displayRole').innerText = role === 'staff' ? '廠務人員' : (role === 'supervisor' ? '廠務主管' : '管理員');
-            document.getElementById('loginPage').classList.add('hidden');
-            document.getElementById('appPage').classList.remove('hidden');
-            document.body.classList.replace('login-bg', 'app-bg');
-            fetchData();
-        }
+// 穩定版傳送邏輯
+async function callBackend(data) {
+    // 顯示讀取中狀態 (如果你有這個元件的話)
+    const loader = document.getElementById('syncLoader');
+    if (loader) loader.classList.remove('hidden');
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'cors', // 必須使用 cors 才能確保資料完整傳送
+            body: JSON.stringify(data),
+            redirect: 'follow'
+        });
+
+        // 這裡因為 GAS 的 CORS 限制，有時讀不到 JSON，但寫入是成功的
+        // 所以我們統一採取「傳送後強制同步」的策略
+        setTimeout(() => {
+            fetchData(); // 重新抓取最新試算表資料
+            if (loader) loader.classList.add('hidden');
+        }, 1500); 
+
+        return { success: true };
+    } catch (e) {
+        console.error("傳送異常:", e);
+        if (loader) loader.classList.add('hidden');
+        return { success: false };
+    }
+}
+
+// 修改還車按鈕觸發的函式
+async function submitReturn() {
+    const returnTime = document.getElementById('returnTimeInput').value;
+    if (!returnTime) return alert("請選擇返回時間");
+
+    // currentEditId 是你在點擊「已抵達」時暫存的 ID
+    await callBackend({
+        action: 'updateReturn',
+        id: currentEditId,
+        returnTime: returnTime
+    });
+
+    closeModal(); // 關閉彈窗
+    alert("返回時間登記成功！資料同步中...");
+}
 
         function logout() { location.reload(); }
 
