@@ -126,17 +126,28 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymtLzzdKt8lrW-6trqIPXiOaQmT5aUnppVAsRcUofs4rHaaW6QG0fbfX7gO-tYipa5YQ/exec"; 
         let currentRole = "staff", records = [], vendors = [], carTotals = {};
+        let currentEditingId = null;
 
-        // 時間格式化小幫手：將 ISO 轉為 04/17 02:35
+        // 【修正核心】24小時制格式化小幫手
         function formatReadableTime(isoStr) {
             if (!isoStr || isoStr === "尚未返回") return isoStr;
             try {
-                // 將 2026-04-17T02:35 轉換
-                const parts = isoStr.split('T');
-                if (parts.length < 2) return isoStr;
-                const datePart = parts[0].substring(5).replace('-', '/'); // 04/17
-                const timePart = parts[1].substring(0, 5); // 02:35
-                return `${datePart} ${timePart}`;
+                // 將 ISO 格式 (2026-04-17 14:35) 轉換為 (04/17 14:35)
+                const dateObj = new Date(isoStr.replace(/-/g, '/')); 
+                if (isNaN(dateObj)) {
+                    // 如果 Date 解析失敗，嘗試手動切分字串處理
+                    const parts = isoStr.split(' ');
+                    const datePart = parts[0].substring(5).replace('-', '/');
+                    const timePart = parts[1].substring(0, 5);
+                    return `${datePart} ${timePart}`;
+                }
+                
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const hours = String(dateObj.getHours()).padStart(2, '0');
+                const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                
+                return `${month}/${day} ${hours}:${minutes}`;
             } catch (e) { return isoStr; }
         }
 
@@ -191,7 +202,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="p-4">
-                        <div class="font-bold text-[12px] text-gray-100">${formatReadableTime(row.outTime)}</div>
+                        <div class="font-bold text-[13px] text-white tracking-tight">${formatReadableTime(row.outTime)}</div>
                         <div class="text-[10px] text-gray-500">${row.returnTime ? '回: ' + formatReadableTime(row.returnTime) : '尚未返回'}</div>
                     </td>
                     <td class="p-4 max-w-[220px]">
@@ -213,7 +224,6 @@
             });
         }
 
-        // 後續 API 呼叫函數（actionRecord, handleVendorChange 等內容維持之前正常運作的邏輯）
         async function actionRecord(action, id, extra={}) {
             document.getElementById('syncLoader').classList.remove('hidden');
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, id, ...extra }) });
