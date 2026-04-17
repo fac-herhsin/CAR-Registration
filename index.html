@@ -9,339 +9,219 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
         :root { --brand-yellow: #facc15; --brand-dark: #121212; --card-dark: #1e1e1e; --border-dark: #333333; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--brand-dark); color: #ffffff; }
-        .login-bg { background-color: #000000; }
-        .app-bg { background-color: var(--brand-dark); }
-        .card { background: var(--card-dark); border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); border: 1px solid var(--border-dark); }
-        .btn-yellow { background-color: var(--brand-yellow); color: #000; transition: all 0.2s; }
-        .btn-yellow:hover { background-color: #eab308; transform: translateY(-2px); }
-        .btn-dark { background-color: #1a1a1a; color: white; border: 1px solid #333; transition: all 0.2s; }
-        .status-badge { display: inline-flex; align-items: center; justify-content: center; padding: 6px 14px; border-radius: 9999px; font-size: 0.8rem; font-weight: bold; white-space: nowrap; min-width: 80px; text-align: center; line-height: 1; }
-        .status-pending { background-color: #423b00; color: #facc15; border: 1px solid #facc15; }
-        .status-approved { background-color: #064e3b; color: #34d399; border: 1px solid #059669; }
-        input, select, textarea { background-color: #2d2d2d !important; border-color: #444 !important; color: white !important; width: 100%; border-radius: 8px; padding: 10px; outline: none; margin-top: 4px; }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--brand-yellow); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
+        .card { background: var(--card-dark); border-radius: 16px; border: 1px solid var(--border-dark); }
+        .btn-yellow { background-color: var(--brand-yellow); color: #000; font-weight: bold; }
+        .status-badge { padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: bold; }
+        .status-pending { background: #423b00; color: #facc15; border: 1px solid #facc15; }
+        .status-approved { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+        input, select, textarea { background: #2d2d2d !important; border: 1px solid #444 !important; color: white !important; border-radius: 8px; padding: 10px; width: 100%; margin-top: 4px; }
+        .loader { border: 3px solid #333; border-top: 3px solid var(--brand-yellow); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .time-text { font-family: monospace; font-size: 0.85rem; color: #e5e7eb; }
     </style>
 </head>
-<body class="login-bg min-h-screen">
+<body class="min-h-screen">
 
     <div id="loginPage" class="flex flex-col items-center justify-center min-h-screen p-4">
-        <div class="w-24 h-24 bg-yellow-400 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1" />
-            </svg>
-        </div>
-        <h1 class="text-3xl font-bold mb-2 text-center">何鑫實業 / 薪昌</h1>
-        <p class="text-yellow-400 text-lg mb-12">公務車管理系統</p>
+        <h1 class="text-3xl font-bold mb-8 text-yellow-400 text-center">何鑫實業公務車管理</h1>
         <div class="w-full max-w-xs space-y-4">
-            <button onclick="loginAs('staff')" class="w-full btn-dark py-4 rounded-2xl">廠務人員入口</button>
-            <button onclick="loginAs('supervisor')" class="w-full btn-dark py-4 rounded-2xl">廠務主管入口</button>
-            <button onclick="loginAs('admin')" class="w-full btn-dark py-4 rounded-2xl">管理員控制台</button>
+            <button onclick="loginAs('staff')" class="w-full bg-gray-800 py-4 rounded-2xl border border-gray-700">廠務人員入口</button>
+            <button onclick="loginAs('supervisor')" class="w-full bg-gray-800 py-4 rounded-2xl border border-gray-700">廠務主管入口</button>
         </div>
     </div>
 
-    <div id="appPage" class="hidden p-4 md:p-8">
-        <div class="max-w-6xl mx-auto">
-            <div class="flex justify-between items-center mb-8">
-                <div>
-                    <h1 class="text-xl font-bold">何鑫實業 - 公務車管理</h1>
-                    <p class="text-gray-400 text-sm">目前身份：<span id="displayRole" class="text-yellow-400 font-bold"></span></p>
-                </div>
-                <button onclick="logout()" class="px-4 py-2 border border-gray-700 rounded-xl bg-gray-800 text-sm">返回入口</button>
+    <div id="appPage" class="hidden p-4 max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-yellow-400">系統主面板 (<span id="roleName"></span>)</h2>
+            <button onclick="location.reload()" class="text-xs text-gray-500 underline">登出</button>
+        </div>
+
+        <div id="kmDashboard" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             </div>
 
-            <div id="kmDashboard" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1">
+                <div class="card p-6 border-t-4 border-yellow-400">
+                    <form id="regForm" class="space-y-4">
+                        <h3 class="font-bold mb-2">出車登記</h3>
+                        <input type="datetime-local" id="outTime" required>
+                        <input type="text" id="driver" placeholder="駕駛姓名" required>
+                        <select id="car" required>
+                            <option value="">選擇車輛</option>
+                            <option value="ARC-9132(八人座)">ARC-9132(八人座)</option>
+                            <option value="AQW-3898(卡旺)">AQW-3898(卡旺)</option>
+                            <option value="BYV-6505(3.5T)">BYV-6505(3.5T)</option>
+                        </select>
+                        <select id="vendorSelect" onchange="handleVendorChange()">
+                            <option value="">-- 目的地資料庫 --</option>
+                        </select>
+                        <input type="number" id="kmInput" placeholder="來回里程 (KM)" required>
+                        <textarea id="purpose" placeholder="目的說明" rows="2" required></textarea>
+                        <button type="submit" id="submitBtn" class="w-full btn-yellow py-3 rounded-xl">提交登記單</button>
+                    </form>
                 </div>
+            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1">
-                    <div class="card p-6 border-t-4 border-yellow-400">
-                        <h2 class="text-lg font-bold mb-6 text-yellow-400">新增登記單</h2>
-                        <form id="regForm" class="space-y-4">
-                            <div>
-                                <label class="text-xs text-gray-400">預計外出時間</label>
-                                <input type="datetime-local" id="outTime" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">駕駛人員</label>
-                                <input type="text" id="driver" placeholder="姓名" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">使用車輛</label>
-                                <select id="car" required>
-                                    <option value="">選擇車輛</option>
-                                    <option value="ARC-9132(八人座)">ARC-9132(八人座)</option>
-                                    <option value="AQW-3898(卡旺)">AQW-3898(卡旺)</option>
-                                    <option value="BYV-6505(3.5T)">BYV-6505(3.5T)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">目的地 (可從資料庫選擇)</label>
-                                <select id="vendorSelect" onchange="handleVendorChange()">
-                                    <option value="">-- 手動輸入內容 --</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">來回里程數 (KM)</label>
-                                <input type="number" id="kmInput" step="0.1" placeholder="請輸入里程" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">目的詳細說明</label>
-                                <textarea id="purpose" rows="2" placeholder="如：工地勘查" required></textarea>
-                            </div>
-                            <button type="submit" id="submitBtn" class="w-full btn-yellow py-3 font-bold rounded-xl mt-2">提交登記單</button>
-                        </form>
+            <div class="lg:col-span-2">
+                <div class="card overflow-hidden">
+                    <div class="p-4 bg-[#252525] flex justify-between items-center">
+                        <span class="font-bold">近期紀錄</span>
+                        <div id="syncLoader" class="loader hidden"></div>
                     </div>
-                </div>
-
-                <div class="lg:col-span-2">
-                    <div class="card overflow-hidden border-t-4 border-yellow-400">
-                        <div class="p-5 flex justify-between items-center bg-[#252525]">
-                            <h2 class="font-bold text-yellow-400">公務車使用紀錄</h2>
-                            <div class="flex items-center gap-2">
-                                <span id="syncStatus" class="text-xs text-gray-500">同步中...</span>
-                                <div id="syncLoader" class="loader hidden"></div>
-                            </div>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full">
-                                <thead class="bg-[#2a2a2a] text-xs text-yellow-400 uppercase">
-                                    <tr>
-                                        <th class="px-4 py-4 text-left">時間</th>
-                                        <th class="px-4 py-4 text-left">駕駛/車輛</th>
-                                        <th class="px-4 py-4 text-left">目的地/里程</th>
-                                        <th class="px-4 py-4 text-left">狀態</th>
-                                        <th class="px-4 py-4 text-center">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="dataTable" class="divide-y divide-gray-800 text-sm"></tbody>
-                            </table>
-                        </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-[#2a2a2a] text-yellow-400">
+                                <tr>
+                                    <th class="p-3 text-left">時間</th>
+                                    <th class="p-3 text-left">車輛/里程</th>
+                                    <th class="p-3 text-left">狀態</th>
+                                    <th class="p-3 text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTable" class="divide-y divide-gray-800"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="returnModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-[100] p-4">
-        <div class="card w-full max-sm border-t-4 border-blue-500 p-6">
-            <h3 class="text-xl font-bold text-white mb-2">還車登記</h3>
-            <p class="text-gray-400 text-sm mb-6">請確認實際返回時間：</p>
-            <input type="datetime-local" id="modalReturnTime" class="mb-6 block w-full">
-            <div class="flex gap-3">
-                <button onclick="closeReturnModal()" class="flex-1 btn-dark py-3 rounded-xl text-sm">取消</button>
-                <button id="confirmReturnBtn" class="flex-1 bg-blue-500 text-white font-bold py-3 rounded-xl hover:bg-blue-600 text-sm">確認送出</button>
+    <div id="returnModal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-50">
+        <div class="card p-6 w-full max-w-sm">
+            <h3 class="font-bold mb-4">登記返回時間</h3>
+            <input type="datetime-local" id="modalReturnTime" class="mb-4">
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('returnModal').classList.add('hidden')" class="flex-1 py-2 bg-gray-700 rounded-lg">取消</button>
+                <button id="confirmReturnBtn" class="flex-1 py-2 bg-blue-600 rounded-lg">確認返回</button>
             </div>
         </div>
-    </div>
-
-    <div id="toast" class="fixed bottom-8 right-8 transform translate-y-24 opacity-0 transition-all duration-300 bg-yellow-400 text-black px-6 py-3 rounded-2xl z-50 font-bold">
-        <span id="toastMsg">訊息提示</span>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymtLzzdKt8lrW-6trqIPXiOaQmT5aUnppVAsRcUofs4rHaaW6QG0fbfX7gO-tYipa5YQ/exec";
         let currentRole = "staff";
-        let records = [];
-        let vendors = [];
-        let carTotals = {};
+        let records = [], vendors = [], carTotals = {};
         let currentEditingId = null;
 
         function loginAs(role) {
             currentRole = role;
-            document.getElementById('displayRole').innerText = 
-                role === 'staff' ? '廠務人員' : (role === 'supervisor' ? '廠務主管' : '管理員');
+            document.getElementById('roleName').innerText = role === 'staff' ? '廠務' : '主管';
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('appPage').classList.remove('hidden');
-            document.body.classList.replace('login-bg', 'app-bg');
             fetchData();
         }
 
-        function logout() { location.reload(); }
-
         async function fetchData() {
             document.getElementById('syncLoader').classList.remove('hidden');
-            document.getElementById('syncStatus').innerText = "雲端同步中...";
             try {
-                const response = await fetch(SCRIPT_URL);
-                const result = await response.json();
-                records = result.records;
-                vendors = result.vendors;
-                carTotals = result.totals;
-
+                const res = await fetch(SCRIPT_URL);
+                const data = await res.json();
+                records = data.records;
+                vendors = data.vendors;
+                carTotals = data.totals;
                 updateDashboard();
                 updateVendorList();
                 renderTable();
-                document.getElementById('syncStatus').innerText = "資料已同步";
-            } catch (e) {
-                document.getElementById('syncStatus').innerText = "同步失敗";
-            } finally {
-                document.getElementById('syncLoader').classList.add('hidden');
-            }
+            } catch(e) { alert("讀取失敗"); }
+            document.getElementById('syncLoader').classList.add('hidden');
         }
 
         function updateDashboard() {
             const container = document.getElementById('kmDashboard');
             container.innerHTML = '';
-            // 列出固定車輛確保版面整齊
-            const cars = ["ARC-9132(八人座)", "AQW-3898(卡旺)", "BYV-6505(3.5T)"];
-            cars.forEach(car => {
-                const km = carTotals[car] || 0;
+            ["ARC-9132(八人座)", "AQW-3898(卡旺)", "BYV-6505(3.5T)"].forEach(car => {
+                const info = carTotals[car] || { km: 0, nextService: "未設定", inspectDate: "未設定" };
+                const isWarning = (parseFloat(info.nextService) - parseFloat(info.km)) < 500;
+                
                 container.innerHTML += `
-                    <div class="card p-4 text-center border-b-2 border-yellow-500">
-                        <div class="text-[10px] text-gray-400 mb-1">${car}</div>
-                        <div class="text-xl font-bold text-yellow-400">${Number(km).toLocaleString()} <span class="text-xs">km</span></div>
-                    </div>
-                `;
+                    <div class="card p-4 border-b-2 border-yellow-500">
+                        <div class="text-[10px] text-gray-500 uppercase">${car}</div>
+                        <div class="text-2xl font-bold ${isWarning ? 'text-red-500' : 'text-yellow-400'} mb-2">
+                            ${Number(info.km).toLocaleString()} <span class="text-xs text-gray-400">km</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 border-t border-gray-800 pt-2 text-[11px]">
+                            <div class="text-gray-500">下次保養: <span class="text-gray-200">${info.nextService}</span></div>
+                            <div class="text-gray-500">定檢日期: <span class="text-gray-200">${info.inspectDate}</span></div>
+                        </div>
+                    </div>`;
             });
         }
 
         function updateVendorList() {
-            const select = document.getElementById('vendorSelect');
-            select.innerHTML = '<option value="">-- 手動輸入內容 --</option>';
+            const sel = document.getElementById('vendorSelect');
+            sel.innerHTML = '<option value="">-- 目的地資料庫 --</option>';
             vendors.forEach(v => {
                 const opt = document.createElement('option');
                 opt.value = v.km;
-                opt.textContent = `${v.name} (${v.km * 2}km 來回)`;
-                select.appendChild(opt);
+                opt.textContent = `${v.name} (${v.km * 2}km)`;
+                sel.appendChild(opt);
             });
         }
 
         function handleVendorChange() {
-            const select = document.getElementById('vendorSelect');
-            const kmInput = document.getElementById('kmInput');
-            const purposeInput = document.getElementById('purpose');
-            
-            if (select.value) {
-                // 自動帶入來回里程 (後端回傳的是單趟還是來回? 根據你的需求，這裡假設存的是單趟，乘以2。若資料庫存的就是來回則免)
-                // 照你需求：A到B為3，來回為6。
-                kmInput.value = parseFloat(select.value) * 2; 
-                purposeInput.value = select.options[select.selectedIndex].text.split(' (')[0];
-            }
-        }
-
-        async function callBackend(data) {
-            document.getElementById('syncLoader').classList.remove('hidden');
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    body: JSON.stringify(data),
-                    redirect: 'follow'
-                });
-                setTimeout(fetchData, 1000); 
-                return { success: true };
-            } catch (e) {
-                showToast("連線異常");
-                return { success: false };
+            const sel = document.getElementById('vendorSelect');
+            if (sel.value) {
+                document.getElementById('kmInput').value = parseFloat(sel.value) * 2;
+                document.getElementById('purpose').value = sel.options[sel.selectedIndex].text.split(' (')[0];
             }
         }
 
         function renderTable() {
             const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
-            
-            records.sort((a, b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
+            records.sort((a,b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
+                const status = row.status || "待覆核";
+                const isBoss = currentRole === 'supervisor';
                 const tr = document.createElement('tr');
-                const isStaff = currentRole === 'staff' || currentRole === 'admin';
-                const isBoss = currentRole === 'supervisor' || currentRole === 'admin';
-                
-                let statusText = String(row.status || "").trim() || "待覆核";
-                let statusClass = (statusText === '已出車' || statusText === '已結案') ? "status-approved" : "status-pending";
-
-                const canApprove = isBoss && (statusText === '待覆核' || statusText === '待結案');
-                const canMarkArrived = isStaff && statusText === '已出車';
-
                 tr.innerHTML = `
-                    <td class="px-4 py-5">
-                        <div class="time-text">${row.outTime.substring(5, 16)}</div>
-                        <div class="text-[10px] text-gray-500">${row.returnTime ? row.returnTime.substring(5, 16) : '尚未返回'}</div>
+                    <td class="p-3">
+                        <div class="font-mono text-[11px]">${row.outTime.substring(5,16)}</div>
+                        <div class="text-[10px] text-gray-500">${row.returnTime ? '回:'+row.returnTime.substring(5,16) : '尚未返回'}</div>
                     </td>
-                    <td class="px-4 py-5">
-                        <div class="font-bold">${row.driver}</div>
-                        <div class="text-[10px] text-yellow-500">${row.car}</div>
+                    <td class="p-3">
+                        <div class="font-bold">${row.car.split('(')[0]}</div>
+                        <div class="text-blue-400 text-xs">${row.km} km</div>
                     </td>
-                    <td class="px-4 py-5">
-                        <div class="truncate w-24" title="${row.purpose}">${row.purpose}</div>
-                        <div class="text-xs text-blue-400 font-bold">${row.km} km</div>
-                    </td>
-                    <td class="px-4 py-5">
-                        <span class="status-badge ${statusClass}">${statusText}</span>
-                    </td>
-                    <td class="px-4 py-5 text-center">
-                        ${canApprove ? `<button onclick="approveRecord('${row.id}')" class="bg-yellow-400 text-black px-3 py-1 rounded-lg font-bold text-xs">覆核</button>` : ''}
-                        ${canMarkArrived ? `<button onclick="markArrived('${row.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg font-bold text-xs">抵達</button>` : ''}
-                        ${isBoss ? `<button onclick="deleteRecord('${row.id}')" class="text-red-400 text-[10px] block mt-2 mx-auto">刪除</button>` : ''}
-                    </td>
-                `;
+                    <td class="p-3"><span class="status-badge ${status.includes('已') ? 'status-approved' : 'status-pending'}">${status}</span></td>
+                    <td class="p-3 text-center">
+                        ${(isBoss && (status=='待覆核'||status=='待結案')) ? `<button onclick="actionRecord('approve','${row.id}')" class="bg-yellow-400 text-black px-2 py-1 rounded text-xs">覆核</button>` : ''}
+                        ${(currentRole=='staff' && status=='已出車') ? `<button onclick="openReturnModal('${row.id}')" class="bg-blue-600 px-2 py-1 rounded text-xs">還車</button>` : ''}
+                    </td>`;
                 tbody.appendChild(tr);
             });
+        }
+
+        async function actionRecord(action, id, extra={}) {
+            document.getElementById('syncLoader').classList.remove('hidden');
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, id, ...extra }) });
+            fetchData();
         }
 
         document.getElementById('regForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            const data = {
-                action: 'append',
-                id: Date.now().toString(),
+            await actionRecord('append', Date.now(), {
                 outTime: document.getElementById('outTime').value.replace('T', ' '),
                 driver: document.getElementById('driver').value,
                 car: document.getElementById('car').value,
                 purpose: document.getElementById('purpose').value,
                 km: document.getElementById('kmInput').value
-            };
-            const res = await callBackend(data);
-            if(res.success) {
-                document.getElementById('regForm').reset();
-                showToast("提交成功");
-            }
+            });
+            document.getElementById('regForm').reset();
             btn.disabled = false;
         };
 
-        async function approveRecord(id) {
-            await callBackend({ action: 'approve', id: id });
-            showToast("覆核完成");
-        }
-
-        function markArrived(id) {
+        function openReturnModal(id) {
             currentEditingId = id;
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('modalReturnTime').value = now.toISOString().slice(0, 16);
+            document.getElementById('modalReturnTime').value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16);
             document.getElementById('returnModal').classList.remove('hidden');
         }
 
-        function closeReturnModal() {
-            document.getElementById('returnModal').classList.add('hidden');
-        }
-
         document.getElementById('confirmReturnBtn').onclick = async () => {
-            const timeValue = document.getElementById('modalReturnTime').value;
-            const idToUpdate = currentEditingId;
-            closeReturnModal();
-            await callBackend({ 
-                action: 'updateReturn', 
-                id: idToUpdate, 
-                returnTime: timeValue.replace('T', ' ') 
-            });
-            showToast("登記完成");
+            const time = document.getElementById('modalReturnTime').value.replace('T', ' ');
+            document.getElementById('returnModal').classList.add('hidden');
+            await actionRecord('updateReturn', currentEditingId, { returnTime: time });
         };
-
-        async function deleteRecord(id) {
-            if(confirm("確定刪除此紀錄？")) {
-                await callBackend({ action: 'delete', id: id });
-                showToast("已刪除");
-            }
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
-            t.classList.remove('translate-y-24', 'opacity-0');
-            setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 3000);
-        }
     </script>
 </body>
 </html>
