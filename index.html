@@ -59,7 +59,7 @@
             <button onclick="location.reload()" class="bg-gray-800 px-4 py-2 rounded-lg text-xs border border-gray-700">登出</button>
         </div>
 
-        <div id="kmDashboard" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"></div>
+        <div id="kmDashboard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-1">
@@ -72,10 +72,7 @@
                         </div>
                         <input type="text" id="driver" placeholder="駕駛姓名" required>
                         <select id="car" required>
-                            <option value="">選擇車輛</option>
-                            <option value="ARC-9132(八人座)">ARC-9132(八人座)</option>
-                            <option value="AQW-3898(卡旺)">AQW-3898(卡旺)</option>
-                            <option value="BYV-6505(3.5T)">BYV-6505(3.5T)</option>
+                            <option value="">正在載入車輛...</option>
                         </select>
                         <select id="vendorSelect" onchange="handleVendorChange()">
                             <option value="">-- 從地點資料庫選擇 --</option>
@@ -127,31 +124,21 @@
         let currentRole = "staff", records = [], vendors = [], carTotals = {};
         let currentEditingId = null;
 
-        // 【終極修正】強力解析各種時間格式
         function formatReadableTime(input) {
             if (!input || input === "尚未返回") return input;
-            
             try {
-                // 處理可能帶有 Z 或 .000Z 的長字串
                 let dateObj = new Date(input);
-                
-                // 如果 Date 直接解析失敗，手動清理字串
                 if (isNaN(dateObj.getTime())) {
                     let cleanStr = input.replace('T', ' ').split('.')[0].replace('Z', '');
                     dateObj = new Date(cleanStr.replace(/-/g, '/'));
                 }
-
                 if (isNaN(dateObj.getTime())) return input;
-
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(dateObj.getDate()).padStart(2, '0');
                 const hours = String(dateObj.getHours()).padStart(2, '0');
                 const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-                
                 return `${month}/${day} ${hours}:${minutes}`;
-            } catch (e) { 
-                return input; 
-            }
+            } catch (e) { return input; }
         }
 
         function loginAs(role) {
@@ -168,7 +155,10 @@
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
                 records = data.records; vendors = data.vendors; carTotals = data.totals;
-                updateDashboard(); updateVendorList(); renderTable();
+                updateDashboard(); 
+                updateCarDropdown(); // 自動生成車輛下拉清單
+                updateVendorList(); 
+                renderTable();
             } catch(e) { console.error(e); }
             document.getElementById('syncLoader').classList.add('hidden');
         }
@@ -176,12 +166,13 @@
         function updateDashboard() {
             const container = document.getElementById('kmDashboard');
             container.innerHTML = '';
-            ["ARC-9132(八人座)", "AQW-3898(卡旺)", "BYV-6505(3.5T)"].forEach(car => {
-                const info = carTotals[car] || { km: 0, nextService: "未設定", inspectDate: "未設定" };
+            // 自動從 API 回傳的 carTotals 抓取所有車名
+            Object.keys(carTotals).forEach(car => {
+                const info = carTotals[car];
                 const isWarning = (parseFloat(info.nextService) - parseFloat(info.km)) < 500;
                 container.innerHTML += `
                     <div class="card p-4 border-b-2 border-yellow-500 bg-gradient-to-br from-[#1e1e1e] to-[#121212]">
-                        <div class="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">${car}</div>
+                        <div class="text-[10px] text-gray-500 uppercase font-bold tracking-tighter truncate">${car}</div>
                         <div class="text-2xl font-bold ${isWarning ? 'text-red-500' : 'text-yellow-400'} my-1">
                             ${Number(info.km).toLocaleString()} <span class="text-xs text-gray-500">km</span>
                         </div>
@@ -193,15 +184,23 @@
             });
         }
 
+        function updateCarDropdown() {
+            const sel = document.getElementById('car');
+            sel.innerHTML = '<option value="">選擇車輛</option>';
+            Object.keys(carTotals).forEach(car => {
+                const opt = document.createElement('option');
+                opt.value = car;
+                opt.textContent = car;
+                sel.appendChild(opt);
+            });
+        }
+
         function renderTable() {
             const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
             records.sort((a,b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
                 const status = row.status || "待覆核";
-                const isAdmin = currentRole === 'admin';
-                const isBoss = currentRole === 'supervisor' || isAdmin;
-                const isStaff = currentRole === 'staff' || isAdmin;
-                
+                const isAdmin = currentRole === 'admin', isBoss = currentRole === 'supervisor' || isAdmin, isStaff = currentRole === 'staff' || isAdmin;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="p-4">
