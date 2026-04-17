@@ -75,10 +75,13 @@
                             <option value="">正在載入車輛...</option>
                         </select>
                         <select id="vendorSelect" onchange="handleVendorChange()">
-                            <option value="">-- 從地點資料庫選擇 --</option>
+                            <option value="">-- 從地點資料庫選擇 (自動帶入里程) --</option>
                         </select>
-                        <input type="number" id="kmInput" placeholder="來回里程 (KM)" required>
-                        <textarea id="purpose" placeholder="目的說明 (如:工地勘查)" rows="2" required></textarea>
+                        <div>
+                            <label class="text-[10px] text-gray-500 ml-1">本次行駛里程 (可手動修正)</label>
+                            <input type="number" id="kmInput" step="0.1" placeholder="請輸入總里程 (KM)" required>
+                        </div>
+                        <textarea id="purpose" placeholder="目的說明 (如臨時增加行程可在此註記)" rows="2" required></textarea>
                         <button type="submit" id="submitBtn" class="w-full btn-yellow py-3 rounded-xl hover:scale-[1.02] transition">提交登記單</button>
                     </form>
                 </div>
@@ -124,6 +127,7 @@
         let currentRole = "staff", records = [], vendors = [], carTotals = {};
         let currentEditingId = null;
 
+        // 時間格式化 (維持 24 小時制)
         function formatReadableTime(input) {
             if (!input || input === "尚未返回") return input;
             try {
@@ -156,7 +160,7 @@
                 const data = await res.json();
                 records = data.records; vendors = data.vendors; carTotals = data.totals;
                 updateDashboard(); 
-                updateCarDropdown(); // 自動生成車輛下拉清單
+                updateCarDropdown();
                 updateVendorList(); 
                 renderTable();
             } catch(e) { console.error(e); }
@@ -166,7 +170,6 @@
         function updateDashboard() {
             const container = document.getElementById('kmDashboard');
             container.innerHTML = '';
-            // 自動從 API 回傳的 carTotals 抓取所有車名
             Object.keys(carTotals).forEach(car => {
                 const info = carTotals[car];
                 const isWarning = (parseFloat(info.nextService) - parseFloat(info.km)) < 500;
@@ -242,7 +245,7 @@
                 driver: document.getElementById('driver').value,
                 car: document.getElementById('car').value,
                 purpose: document.getElementById('purpose').value,
-                km: document.getElementById('kmInput').value
+                km: document.getElementById('kmInput').value // 這裡會抓取使用者最終輸入的數值
             });
             document.getElementById('regForm').reset(); btn.disabled = false; btn.innerText = "提交登記單";
         };
@@ -261,7 +264,7 @@
         
         function updateVendorList() {
             const sel = document.getElementById('vendorSelect');
-            sel.innerHTML = '<option value="">-- 從地點資料庫選擇 --</option>';
+            sel.innerHTML = '<option value="">-- 從地點資料庫選擇 (自動帶入里程) --</option>';
             vendors.forEach(v => {
                 const opt = document.createElement('option');
                 opt.value = v.km;
@@ -273,6 +276,7 @@
         function handleVendorChange() {
             const sel = document.getElementById('vendorSelect');
             if (sel.value) {
+                // 自動計算並帶入預估里程，但使用者仍可手動覆蓋修改
                 document.getElementById('kmInput').value = parseFloat(sel.value) * 2;
                 document.getElementById('purpose').value = sel.options[sel.selectedIndex].text.split(' (')[0];
             }
