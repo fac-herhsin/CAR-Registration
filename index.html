@@ -18,7 +18,6 @@
         .loader { border: 3px solid #333; border-top: 3px solid var(--brand-yellow); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 目的地自動省略與懸停展開 */
         .purpose-text {
             display: -webkit-box;
             -webkit-line-clamp: 1;
@@ -128,27 +127,31 @@
         let currentRole = "staff", records = [], vendors = [], carTotals = {};
         let currentEditingId = null;
 
-        // 【修正核心】24小時制格式化小幫手
-        function formatReadableTime(isoStr) {
-            if (!isoStr || isoStr === "尚未返回") return isoStr;
+        // 【終極修正】強力解析各種時間格式
+        function formatReadableTime(input) {
+            if (!input || input === "尚未返回") return input;
+            
             try {
-                // 將 ISO 格式 (2026-04-17 14:35) 轉換為 (04/17 14:35)
-                const dateObj = new Date(isoStr.replace(/-/g, '/')); 
-                if (isNaN(dateObj)) {
-                    // 如果 Date 解析失敗，嘗試手動切分字串處理
-                    const parts = isoStr.split(' ');
-                    const datePart = parts[0].substring(5).replace('-', '/');
-                    const timePart = parts[1].substring(0, 5);
-                    return `${datePart} ${timePart}`;
-                }
+                // 處理可能帶有 Z 或 .000Z 的長字串
+                let dateObj = new Date(input);
                 
+                // 如果 Date 直接解析失敗，手動清理字串
+                if (isNaN(dateObj.getTime())) {
+                    let cleanStr = input.replace('T', ' ').split('.')[0].replace('Z', '');
+                    dateObj = new Date(cleanStr.replace(/-/g, '/'));
+                }
+
+                if (isNaN(dateObj.getTime())) return input;
+
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(dateObj.getDate()).padStart(2, '0');
                 const hours = String(dateObj.getHours()).padStart(2, '0');
                 const minutes = String(dateObj.getMinutes()).padStart(2, '0');
                 
                 return `${month}/${day} ${hours}:${minutes}`;
-            } catch (e) { return isoStr; }
+            } catch (e) { 
+                return input; 
+            }
         }
 
         function loginAs(role) {
