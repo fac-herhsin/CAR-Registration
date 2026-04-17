@@ -18,17 +18,15 @@
         .loader { border: 3px solid #333; border-top: 3px solid var(--brand-yellow); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 目的說明的自動省略與展開效果 */
+        /* 目的地自動省略與懸停展開 */
         .purpose-text {
             display: -webkit-box;
-            -webkit-line-clamp: 1; /* 預設只顯示一行 */
+            -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
             overflow: hidden;
             transition: all 0.3s ease;
             cursor: help;
         }
-
-        /* 當滑鼠懸停在整格 td 或文字上時展開 */
         td:hover .purpose-text {
             -webkit-line-clamp: unset;
             color: #ffffff;
@@ -40,8 +38,8 @@
 <body class="min-h-screen">
 
     <div id="loginPage" class="flex flex-col items-center justify-center min-h-screen p-4">
-        <div class="w-20 h-20 bg-yellow-400 rounded-2xl flex items-center justify-center mb-6 shadow-xl">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="w-20 h-20 bg-yellow-400 rounded-2xl flex items-center justify-center mb-6 shadow-xl text-black">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1" />
             </svg>
         </div>
@@ -126,15 +124,25 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymtLzzdKt8lrW-6trqIPXiOaQmT5aUnppVAsRcUofs4rHaaW6QG0fbfX7gO-tYipa5YQ/exec";
-        let currentRole = "staff";
-        let records = [], vendors = [], carTotals = {};
-        let currentEditingId = null;
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymtLzzdKt8lrW-6trqIPXiOaQmT5aUnppVAsRcUofs4rHaaW6QG0fbfX7gO-tYipa5YQ/exec"; 
+        let currentRole = "staff", records = [], vendors = [], carTotals = {};
+
+        // 時間格式化小幫手：將 ISO 轉為 04/17 02:35
+        function formatReadableTime(isoStr) {
+            if (!isoStr || isoStr === "尚未返回") return isoStr;
+            try {
+                // 將 2026-04-17T02:35 轉換
+                const parts = isoStr.split('T');
+                if (parts.length < 2) return isoStr;
+                const datePart = parts[0].substring(5).replace('-', '/'); // 04/17
+                const timePart = parts[1].substring(0, 5); // 02:35
+                return `${datePart} ${timePart}`;
+            } catch (e) { return isoStr; }
+        }
 
         function loginAs(role) {
             currentRole = role;
-            const roleMap = { 'staff': '廠務人員', 'supervisor': '廠務主管', 'admin': '系統管理員' };
-            document.getElementById('roleName').innerText = roleMap[role];
+            document.getElementById('roleName').innerText = { 'staff': '廠務人員', 'supervisor': '廠務主管', 'admin': '系統管理員' }[role];
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('appPage').classList.remove('hidden');
             fetchData();
@@ -145,12 +153,8 @@
             try {
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
-                records = data.records;
-                vendors = data.vendors;
-                carTotals = data.totals;
-                updateDashboard();
-                updateVendorList();
-                renderTable();
+                records = data.records; vendors = data.vendors; carTotals = data.totals;
+                updateDashboard(); updateVendorList(); renderTable();
             } catch(e) { console.error(e); }
             document.getElementById('syncLoader').classList.add('hidden');
         }
@@ -161,7 +165,6 @@
             ["ARC-9132(八人座)", "AQW-3898(卡旺)", "BYV-6505(3.5T)"].forEach(car => {
                 const info = carTotals[car] || { km: 0, nextService: "未設定", inspectDate: "未設定" };
                 const isWarning = (parseFloat(info.nextService) - parseFloat(info.km)) < 500;
-                
                 container.innerHTML += `
                     <div class="card p-4 border-b-2 border-yellow-500 bg-gradient-to-br from-[#1e1e1e] to-[#121212]">
                         <div class="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">${car}</div>
@@ -176,25 +179,6 @@
             });
         }
 
-        function updateVendorList() {
-            const sel = document.getElementById('vendorSelect');
-            sel.innerHTML = '<option value="">-- 從地點資料庫選擇 --</option>';
-            vendors.forEach(v => {
-                const opt = document.createElement('option');
-                opt.value = v.km;
-                opt.textContent = `${v.name} (來回 ${v.km * 2}km)`;
-                sel.appendChild(opt);
-            });
-        }
-
-        function handleVendorChange() {
-            const sel = document.getElementById('vendorSelect');
-            if (sel.value) {
-                document.getElementById('kmInput').value = parseFloat(sel.value) * 2;
-                document.getElementById('purpose').value = sel.options[sel.selectedIndex].text.split(' (')[0];
-            }
-        }
-
         function renderTable() {
             const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
@@ -207,8 +191,8 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="p-4">
-                        <div class="font-mono text-[11px] text-gray-300">${row.outTime.substring(5,16)}</div>
-                        <div class="text-[10px] text-gray-500">${row.returnTime ? '回:'+row.returnTime.substring(5,16) : '尚未返回'}</div>
+                        <div class="font-bold text-[12px] text-gray-100">${formatReadableTime(row.outTime)}</div>
+                        <div class="text-[10px] text-gray-500">${row.returnTime ? '回: ' + formatReadableTime(row.returnTime) : '尚未返回'}</div>
                     </td>
                     <td class="p-4 max-w-[220px]">
                         <div class="font-bold text-gray-100">${row.car.split('(')[0]} <span class="text-[10px] text-gray-500 ml-1">(${row.driver})</span></div>
@@ -229,23 +213,18 @@
             });
         }
 
+        // 後續 API 呼叫函數（actionRecord, handleVendorChange 等內容維持之前正常運作的邏輯）
         async function actionRecord(action, id, extra={}) {
             document.getElementById('syncLoader').classList.remove('hidden');
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, id, ...extra }) });
             fetchData();
         }
 
-        async function deleteRecord(id) {
-            if(confirm("確定要刪除這筆紀錄嗎？此動作無法復原。")) {
-                await actionRecord('delete', id);
-            }
-        }
+        async function deleteRecord(id) { if(confirm("確定要刪除這筆紀錄嗎？")) await actionRecord('delete', id); }
 
         document.getElementById('regForm').onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.innerText = "提交中...";
+            const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerText = "提交中...";
             await actionRecord('append', Date.now(), {
                 outTime: document.getElementById('outTime').value.replace('T', ' '),
                 driver: document.getElementById('driver').value,
@@ -253,9 +232,7 @@
                 purpose: document.getElementById('purpose').value,
                 km: document.getElementById('kmInput').value
             });
-            document.getElementById('regForm').reset();
-            btn.disabled = false;
-            btn.innerText = "提交登記單";
+            document.getElementById('regForm').reset(); btn.disabled = false; btn.innerText = "提交登記單";
         };
 
         function openReturnModal(id) {
@@ -269,6 +246,25 @@
             document.getElementById('returnModal').classList.add('hidden');
             await actionRecord('updateReturn', currentEditingId, { returnTime: time });
         };
+        
+        function updateVendorList() {
+            const sel = document.getElementById('vendorSelect');
+            sel.innerHTML = '<option value="">-- 從地點資料庫選擇 --</option>';
+            vendors.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.km;
+                opt.textContent = `${v.name} (來回 ${v.km * 2}km)`;
+                sel.appendChild(opt);
+            });
+        }
+
+        function handleVendorChange() {
+            const sel = document.getElementById('vendorSelect');
+            if (sel.value) {
+                document.getElementById('kmInput').value = parseFloat(sel.value) * 2;
+                document.getElementById('purpose').value = sel.options[sel.selectedIndex].text.split(' (')[0];
+            }
+        }
     </script>
 </body>
 </html>
