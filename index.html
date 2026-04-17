@@ -99,14 +99,14 @@
             <input type="datetime-local" id="modalReturnTime" class="mb-6">
             <div class="flex gap-3">
                 <button onclick="document.getElementById('returnModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-700 rounded-xl">取消</button>
-                <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認返回</button>
+                <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認還車</button>
             </div>
         </div>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymtLzzdKt8lrW-6trqIPXiOaQmT5aUnppVAsRcUofs4rHaaW6QG0fbfX7gO-tYipa5YQ/exec"; 
-        let currentRole = "staff", records = [], carTotals = {};
+        let currentRole = "staff", records = [], carTotals = {}, vendors = [];
         let currentEditingId = null;
 
         function loginAs(role) {
@@ -122,10 +122,56 @@
             try {
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
-                records = data.records; carTotals = data.totals;
-                updateDashboard(); updateCarDropdown(); renderTable();
-            } catch(e) { console.error(e); }
+                records = data.records; 
+                carTotals = data.totals; 
+                vendors = data.vendors;
+                updateDashboard(); 
+                updateCarDropdown(); 
+                updateVendorDropdown();
+                renderTable();
+            } catch(e) { console.error("抓取失敗:", e); }
             document.getElementById('syncLoader').classList.add('hidden');
+        }
+
+        function updateDashboard() {
+            const container = document.getElementById('kmDashboard');
+            container.innerHTML = '';
+            for (let car in carTotals) {
+                const info = carTotals[car];
+                container.innerHTML += `
+                    <div class="card p-4 border-l-4 border-yellow-400">
+                        <div class="text-[10px] text-gray-500 mb-1">${car}</div>
+                        <div class="text-2xl font-bold text-yellow-400">${Number(info.km).toLocaleString()} <span class="text-xs">km</span></div>
+                        <div class="mt-2 text-[10px] text-gray-400 flex justify-between">
+                            <span>下回保養: ${info.nextService}</span>
+                            <span>定檢: ${info.inspectDate ? info.inspectDate.split('T')[0] : '無'}</span>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function updateCarDropdown() {
+            const select = document.getElementById('car');
+            select.innerHTML = '<option value="">-- 選擇車輛 --</option>';
+            for (let car in carTotals) {
+                select.innerHTML += `<option value="${car}">${car}</option>`;
+            }
+        }
+
+        function updateVendorDropdown() {
+            const select = document.getElementById('vendorSelect');
+            select.innerHTML = '<option value="">-- 從地點資料庫選擇 (自動帶入里程) --</option>';
+            vendors.forEach(v => {
+                select.innerHTML += `<option value="${v.km}">${v.name} (${v.km}km)</option>`;
+            });
+        }
+
+        function handleVendorChange() {
+            const select = document.getElementById('vendorSelect');
+            if (select.value) {
+                document.getElementById('kmInput').value = select.value;
+                document.getElementById('purpose').value = select.options[select.selectedIndex].text.split(' (')[0];
+            }
         }
 
         function renderTable() {
@@ -135,29 +181,33 @@
 
             records.sort((a,b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
                 const status = row.status || "待覆核";
+                const displayOut = row.outTime ? row.outTime.replace('T', ' ') : '未知';
+                const displayReturn = row.returnTime ? row.returnTime.replace('T', ' ') : '尚未返回';
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="p-4 text-[13px]">${row.outTime}<br><span class="text-[10px] text-gray-500">${row.returnTime || '尚未返回'}</span></td>
+                    <td class="p-4 text-[11px] leading-relaxed">${displayOut}<br><span class="text-gray-500">${displayReturn}</span></td>
                     <td class="p-4">
-                        <div class="font-bold">${row.car} <span class="text-[10px] text-gray-500">(${row.driver})</span></div>
+                        <div class="font-bold">${row.car} <span class="text-[10px] text-gray-400">(${row.driver})</span></div>
                         <div class="flex items-center gap-2">
                             <span class="text-blue-400 font-bold">${row.km} km</span>
-                            ${isAdminOrBoss ? `<button onclick="openEditKmModal('${row.id}', ${row.km})" class="text-[10px] bg-gray-700 px-2 py-0.5 rounded text-gray-300 hover:text-yellow-400">修改</button>` : ''}
+                            ${isAdminOrBoss ? `<button onclick="openEditKmModal('${row.id}', ${row.km})" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded text-yellow-500 border border-yellow-500/30">修改</button>` : ''}
                         </div>
-                        <div class="text-[11px] text-gray-400 mt-1">目的：${row.purpose || ''}</div>
+                        <div class="text-[11px] text-gray-400 mt-1 line-clamp-1">${row.purpose || ''}</div>
                     </td>
-                    <td class="p-4"><span class="status-badge ${status.includes('已') ? 'status-approved' : 'status-pending'}">${status}</span></td>
+                    <td class="p-4"><span class="status-badge ${status === '已結案' ? 'status-approved' : 'status-pending'}">${status}</span></td>
                     <td class="p-4 text-center">
-                        <div class="flex flex-col gap-1 items-center">
-                            ${(isAdminOrBoss && (status=='待覆核'||status=='待結案')) ? `<button onclick="actionRecord('approve','${row.id}')" class="w-16 bg-yellow-400 text-black px-2 py-1 rounded text-[10px] font-bold">覆核</button>` : ''}
-                            ${(currentRole !== 'supervisor' && status=='已出車') ? `<button onclick="openReturnModal('${row.id}')" class="w-16 bg-blue-600 px-2 py-1 rounded text-[10px] font-bold text-white">還車</button>` : ''}
+                        <div class="flex flex-col gap-2 items-center">
+                            ${(isAdminOrBoss && status === '待覆核') ? `<button onclick="actionRecord('approve','${row.id}')" class="w-16 bg-yellow-400 text-black py-1.5 rounded text-[10px] font-bold">覆核</button>` : ''}
+                            ${(currentRole !== 'supervisor' && status === '已出車') ? `<button onclick="openReturnModal('${row.id}')" class="w-16 bg-blue-600 py-1.5 rounded text-[10px] font-bold text-white">還車</button>` : ''}
+                            ${currentRole === 'admin' ? `<button onclick="actionRecord('delete','${row.id}')" class="text-[10px] text-red-500 hover:underline">刪除</button>` : ''}
                         </div>
                     </td>`;
                 tbody.appendChild(tr);
             });
         }
 
-        // --- 里程修改邏輯 ---
+        // 修改里程彈窗邏輯
         function openEditKmModal(id, currentKm) {
             currentEditingId = id;
             document.getElementById('newKmValue').value = currentKm;
@@ -168,17 +218,58 @@
             const newKm = document.getElementById('newKmValue').value;
             if (!newKm) return;
             document.getElementById('editKmModal').classList.add('hidden');
-            document.getElementById('syncLoader').classList.remove('hidden');
-            
-            // 這裡發送請求到 GAS，新增一個 action 'updateKm'
-            await fetch(SCRIPT_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'updateKm', id: currentEditingId, km: newKm }) 
-            });
-            fetchData();
+            await postAction({ action: 'updateKm', id: currentEditingId, km: newKm });
         };
 
-        // ... 其餘 fetchData, updateDashboard, actionRecord 等函式維持不變 ...
+        // 還車彈窗邏輯
+        function openReturnModal(id) {
+            currentEditingId = id;
+            document.getElementById('modalReturnTime').value = new Date().toISOString().slice(0, 16);
+            document.getElementById('returnModal').classList.remove('hidden');
+        }
+
+        document.getElementById('confirmReturnBtn').onclick = async () => {
+            const rTime = document.getElementById('modalReturnTime').value;
+            document.getElementById('returnModal').classList.add('hidden');
+            await postAction({ action: 'updateReturn', id: currentEditingId, returnTime: rTime });
+        };
+
+        // 提交登記單
+        document.getElementById('regForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                action: 'append',
+                id: Date.now(),
+                outTime: document.getElementById('outTime').value,
+                driver: document.getElementById('driver').value,
+                car: document.getElementById('car').value,
+                km: document.getElementById('kmInput').value,
+                purpose: document.getElementById('purpose').value
+            };
+            await postAction(payload);
+            e.target.reset();
+        };
+
+        async function actionRecord(action, id) {
+            if (action === 'delete' && !confirm('確定要刪除這筆單據嗎？')) return;
+            await postAction({ action, id });
+        }
+
+        async function postAction(payload) {
+            document.getElementById('syncLoader').classList.remove('hidden');
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+                await fetchData();
+            } catch(e) { alert("操作失敗，請檢查網路連接"); }
+            document.getElementById('syncLoader').classList.add('hidden');
+        }
+
+        // 設定預設時間
+        window.onload = () => {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('outTime').value = now.toISOString().slice(0, 16);
+        };
     </script>
 </body>
 </html>
