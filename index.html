@@ -179,21 +179,35 @@
             }
         }
 
-        function updateVendorDropdown() {
-            const select = document.getElementById('vendorSelect');
-            select.innerHTML = '<option value="">-- 從地點資料庫選擇 (自動帶入里程) --</option>';
-            vendors.forEach(v => {
-                select.innerHTML += `<option value="${v.km}">${v.name} (${v.km}km)</option>`;
-            });
-        }
+function updateVendorDropdown() {
+    const select = document.getElementById('vendorSelect');
+    // 清空並加入預設選項
+    select.innerHTML = '<option value="">-- 從地點資料庫選擇 (自動帶入來回里程) --</option>';
+    
+    vendors.forEach(v => {
+        // 將單趟里程乘以 2 得到來回里程
+        const roundTripKm = (parseFloat(v.km) * 2).toFixed(1); 
+        const option = document.createElement('option');
+        option.value = roundTripKm;
+        option.textContent = `${v.name} (來回 ${roundTripKm} km)`;
+        select.appendChild(option);
+    });
+}
 
-        function handleVendorChange() {
-            const select = document.getElementById('vendorSelect');
-            if (select.value) {
-                document.getElementById('kmInput').value = select.value;
-                document.getElementById('purpose').value = select.options[select.selectedIndex].text.split(' (')[0];
-            }
-        }
+function handleVendorChange() {
+    const select = document.getElementById('vendorSelect');
+    const kmInput = document.getElementById('kmInput');
+    const purposeInput = document.getElementById('purpose');
+
+    if (select.value) {
+        // 自動填入計算後的來回里程
+        kmInput.value = select.value;
+        
+        // 取得選項文字並移除 "(來回 ... km)" 的後綴，只保留地點名稱作為目的
+        const selectedText = select.options[select.selectedIndex].text;
+        purposeInput.value = selectedText.split(' (')[0];
+    }
+}
 
         // 渲染主要紀錄表格
         function renderTable() {
