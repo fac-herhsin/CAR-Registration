@@ -46,13 +46,16 @@
                 <div class="card p-6 border-t-4 border-yellow-400 shadow-2xl">
                     <form id="regForm" class="space-y-4">
                         <h3 class="font-bold text-lg mb-2 text-white">出車登記</h3>
-                        <input type="datetime-local" id="outTime" required>
+                        <div>
+                            <label class="text-[10px] text-gray-400 ml-1">外出時間</label>
+                            <input type="datetime-local" id="outTime" required>
+                        </div>
                         <input type="text" id="driver" placeholder="駕駛姓名" required>
                         <select id="car" required><option value="">正在載入車輛...</option></select>
-                        <select id="vendorSelect" onchange="handleVendorChange()"><option value="">-- 地點資料庫 (自動帶入) --</option></select>
+                        <select id="vendorSelect" onchange="handleVendorChange()"><option value="">-- 從地點資料庫選擇 (自動帶入里程) --</option></select>
                         <input type="number" id="kmInput" step="0.1" placeholder="本次行駛里程 (KM)" required>
-                        <textarea id="purpose" placeholder="目的說明" rows="2" required></textarea>
-                        <button type="submit" id="submitBtn" class="w-full btn-yellow py-3 rounded-xl">提交登記單</button>
+                        <textarea id="purpose" placeholder="目的說明 (如:工地勘查)" rows="2" required></textarea>
+                        <button type="submit" id="submitBtn" class="w-full btn-yellow py-3 rounded-xl mt-2">提交登記單</button>
                     </form>
                 </div>
             </div>
@@ -99,7 +102,7 @@
             <input type="datetime-local" id="modalReturnTime" class="mb-6">
             <div class="flex gap-3">
                 <button onclick="document.getElementById('returnModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-700 rounded-xl">取消</button>
-                <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認還車</button>
+                <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認返回</button>
             </div>
         </div>
     </div>
@@ -109,6 +112,7 @@
         let currentRole = "staff", records = [], carTotals = {}, vendors = [];
         let currentEditingId = null;
 
+        // 登入功能
         function loginAs(role) {
             currentRole = role;
             document.getElementById('roleName').innerText = { 'staff': '廠務人員', 'supervisor': '廠務主管', 'admin': '系統管理員' }[role];
@@ -117,6 +121,21 @@
             fetchData();
         }
 
+        // 時間格式化工具：強制轉為 24 小時制 MM/DD HH:mm
+        function formatDateTime(dateStr) {
+            if (!dateStr || dateStr === '尚未返回') return dateStr;
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            
+            return `${mm}/${dd} ${hh}:${min}`;
+        }
+
+        // 抓取後端資料
         async function fetchData() {
             document.getElementById('syncLoader').classList.remove('hidden');
             try {
@@ -129,22 +148,24 @@
                 updateCarDropdown(); 
                 updateVendorDropdown();
                 renderTable();
-            } catch(e) { console.error("抓取失敗:", e); }
+            } catch(e) { console.error("資料讀取失敗:", e); }
             document.getElementById('syncLoader').classList.add('hidden');
         }
 
+        // 更新上方車輛里程儀表板
         function updateDashboard() {
             const container = document.getElementById('kmDashboard');
             container.innerHTML = '';
             for (let car in carTotals) {
                 const info = carTotals[car];
+                const inspectDate = info.inspectDate ? info.inspectDate.split('T')[0] : '無數據';
                 container.innerHTML += `
                     <div class="card p-4 border-l-4 border-yellow-400">
                         <div class="text-[10px] text-gray-500 mb-1">${car}</div>
                         <div class="text-2xl font-bold text-yellow-400">${Number(info.km).toLocaleString()} <span class="text-xs">km</span></div>
                         <div class="mt-2 text-[10px] text-gray-400 flex justify-between">
-                            <span>下回保養: ${info.nextService}</span>
-                            <span>定檢: ${info.inspectDate ? info.inspectDate.split('T')[0] : '無'}</span>
+                            <span>下次保養: ${info.nextService}</span>
+                            <span>定檢日期: ${inspectDate}</span>
                         </div>
                     </div>`;
             }
@@ -174,6 +195,7 @@
             }
         }
 
+        // 渲染主要紀錄表格
         function renderTable() {
             const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
@@ -181,19 +203,22 @@
 
             records.sort((a,b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
                 const status = row.status || "待覆核";
-                const displayOut = row.outTime ? row.outTime.replace('T', ' ') : '未知';
-                const displayReturn = row.returnTime ? row.returnTime.replace('T', ' ') : '尚未返回';
+                const displayOut = formatDateTime(row.outTime);
+                const displayReturn = formatDateTime(row.returnTime || '尚未返回');
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="p-4 text-[11px] leading-relaxed">${displayOut}<br><span class="text-gray-500">${displayReturn}</span></td>
+                    <td class="p-4 text-[11px] leading-relaxed">
+                        <div class="font-medium text-white">${displayOut}</div>
+                        <div class="text-gray-500">${displayReturn}</div>
+                    </td>
                     <td class="p-4">
                         <div class="font-bold">${row.car} <span class="text-[10px] text-gray-400">(${row.driver})</span></div>
                         <div class="flex items-center gap-2">
                             <span class="text-blue-400 font-bold">${row.km} km</span>
                             ${isAdminOrBoss ? `<button onclick="openEditKmModal('${row.id}', ${row.km})" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded text-yellow-500 border border-yellow-500/30">修改</button>` : ''}
                         </div>
-                        <div class="text-[11px] text-gray-400 mt-1 line-clamp-1">${row.purpose || ''}</div>
+                        <div class="text-[11px] text-gray-400 mt-1 line-clamp-1">目的：${row.purpose || ''}</div>
                     </td>
                     <td class="p-4"><span class="status-badge ${status === '已結案' ? 'status-approved' : 'status-pending'}">${status}</span></td>
                     <td class="p-4 text-center">
@@ -207,7 +232,7 @@
             });
         }
 
-        // 修改里程彈窗邏輯
+        // 修改里程
         function openEditKmModal(id, currentKm) {
             currentEditingId = id;
             document.getElementById('newKmValue').value = currentKm;
@@ -221,7 +246,7 @@
             await postAction({ action: 'updateKm', id: currentEditingId, km: newKm });
         };
 
-        // 還車彈窗邏輯
+        // 還車登記
         function openReturnModal(id) {
             currentEditingId = id;
             document.getElementById('modalReturnTime').value = new Date().toISOString().slice(0, 16);
@@ -248,10 +273,11 @@
             };
             await postAction(payload);
             e.target.reset();
+            setNowTime();
         };
 
         async function actionRecord(action, id) {
-            if (action === 'delete' && !confirm('確定要刪除這筆單據嗎？')) return;
+            if (action === 'delete' && !confirm('確定要刪除這筆紀錄嗎？')) return;
             await postAction({ action, id });
         }
 
@@ -260,16 +286,17 @@
             try {
                 await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
                 await fetchData();
-            } catch(e) { alert("操作失敗，請檢查網路連接"); }
+            } catch(e) { alert("連線失敗，請檢查網路或腳本設置"); }
             document.getElementById('syncLoader').classList.add('hidden');
         }
 
-        // 設定預設時間
-        window.onload = () => {
+        function setNowTime() {
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('outTime').value = now.toISOString().slice(0, 16);
-        };
+        }
+
+        window.onload = setNowTime;
     </script>
 </body>
 </html>
