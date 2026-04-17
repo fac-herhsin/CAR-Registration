@@ -179,35 +179,30 @@
             }
         }
 
-function updateVendorDropdown() {
-    const select = document.getElementById('vendorSelect');
-    // 清空並加入預設選項
-    select.innerHTML = '<option value="">-- 從地點資料庫選擇 (自動帶入來回里程) --</option>';
-    
-    vendors.forEach(v => {
-        // 將單趟里程乘以 2 得到來回里程
-        const roundTripKm = (parseFloat(v.km) * 2).toFixed(1); 
-        const option = document.createElement('option');
-        option.value = roundTripKm;
-        option.textContent = `${v.name} (來回 ${roundTripKm} km)`;
-        select.appendChild(option);
-    });
-}
+        function updateVendorDropdown() {
+            const select = document.getElementById('vendorSelect');
+            select.innerHTML = '<option value="">-- 從地點資料庫選擇 (自動帶入來回里程) --</option>';
+            vendors.forEach(v => {
+                // 將單趟里程乘以 2 得到來回里程
+                const roundTripKm = (parseFloat(v.km) * 2).toFixed(1); 
+                const option = document.createElement('option');
+                option.value = roundTripKm;
+                option.textContent = `${v.name} (來回 ${roundTripKm} km)`;
+                select.appendChild(option);
+            });
+        }
 
-function handleVendorChange() {
-    const select = document.getElementById('vendorSelect');
-    const kmInput = document.getElementById('kmInput');
-    const purposeInput = document.getElementById('purpose');
+        function handleVendorChange() {
+            const select = document.getElementById('vendorSelect');
+            const kmInput = document.getElementById('kmInput');
+            const purposeInput = document.getElementById('purpose');
 
-    if (select.value) {
-        // 自動填入計算後的來回里程
-        kmInput.value = select.value;
-        
-        // 取得選項文字並移除 "(來回 ... km)" 的後綴，只保留地點名稱作為目的
-        const selectedText = select.options[select.selectedIndex].text;
-        purposeInput.value = selectedText.split(' (')[0];
-    }
-}
+            if (select.value) {
+                kmInput.value = select.value;
+                const selectedText = select.options[select.selectedIndex].text;
+                purposeInput.value = selectedText.split(' (')[0];
+            }
+        }
 
         // 渲染主要紀錄表格
         function renderTable() {
@@ -219,6 +214,7 @@ function handleVendorChange() {
                 const status = row.status || "待覆核";
                 const displayOut = formatDateTime(row.outTime);
                 const displayReturn = formatDateTime(row.returnTime || '尚未返回');
+                const purposeText = row.purpose || '';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -232,7 +228,9 @@ function handleVendorChange() {
                             <span class="text-blue-400 font-bold">${row.km} km</span>
                             ${isAdminOrBoss ? `<button onclick="openEditKmModal('${row.id}', ${row.km})" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded text-yellow-500 border border-yellow-500/30">修改</button>` : ''}
                         </div>
-                        <div class="text-[11px] text-gray-400 mt-1 line-clamp-1">目的：${row.purpose || ''}</div>
+                        <div class="text-[11px] text-gray-400 mt-1 truncate max-w-[150px] md:max-w-[250px]" title="${purposeText}">
+                            目的：${purposeText}
+                        </div>
                     </td>
                     <td class="p-4"><span class="status-badge ${status === '已結案' ? 'status-approved' : 'status-pending'}">${status}</span></td>
                     <td class="p-4 text-center">
