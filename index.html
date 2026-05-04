@@ -21,6 +21,7 @@
 </head>
 <body class="min-h-screen">
 
+    <!-- 登入頁面 -->
     <div id="loginPage" class="flex flex-col items-center justify-center min-h-screen p-4">
         <h1 class="text-3xl font-bold mb-8 text-yellow-400 text-center tracking-widest">何鑫實業 - 公務車系統</h1>
         <div class="w-full max-w-xs space-y-4">
@@ -30,6 +31,7 @@
         </div>
     </div>
 
+    <!-- 主應用頁面 -->
     <div id="appPage" class="hidden p-4 max-w-6xl mx-auto">
         <div class="flex justify-between items-center mb-6">
             <div>
@@ -39,10 +41,10 @@
             <button onclick="location.reload()" class="bg-gray-800 px-4 py-2 rounded-lg text-xs border border-gray-700">登出</button>
         </div>
 
-        <!-- 儀表板 -->
         <div id="kmDashboard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左側操作區 -->
             <div class="lg:col-span-1 space-y-6">
                 <!-- 出車登記 -->
                 <div class="card p-6 border-t-4 border-yellow-400">
@@ -58,7 +60,7 @@
                     </form>
                 </div>
 
-                <!-- 維修紀錄新增 -->
+                <!-- 維修紀錄新增 (僅管理員/主管) -->
                 <div id="maintainBox" class="card p-6 border-t-4 border-red-500 hidden">
                     <h3 class="font-bold text-lg text-white mb-4">新增維修保養</h3>
                     <div class="space-y-3">
@@ -82,7 +84,7 @@
                 </div>
             </div>
 
-            <!-- 右側表格 -->
+            <!-- 右側表格區 -->
             <div class="lg:col-span-2">
                 <div class="card overflow-hidden">
                     <div class="p-4 bg-[#252525] flex justify-between items-center border-b border-gray-800">
@@ -107,13 +109,12 @@
         </div>
     </div>
 
-    <!-- 里程校正 Modal -->
+    <!-- 總里程校正 Modal -->
     <div id="correctKmModal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="card p-6 w-full max-w-sm border-t-4 border-yellow-500">
             <h3 class="font-bold text-lg mb-2 text-yellow-400">總里程校正</h3>
             <p id="correctCarName" class="text-sm text-gray-400 mb-4"></p>
-            <label class="text-xs text-gray-400">請輸入儀表板實際總里程 (km)</label>
-            <input type="number" id="newTotalKm" step="0.1" class="mb-6" placeholder="例如：12500.5">
+            <input type="number" id="newTotalKm" step="0.1" class="mb-6" placeholder="輸入儀表板總里程">
             <div class="flex gap-3">
                 <button onclick="document.getElementById('correctKmModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-700 rounded-xl">取消</button>
                 <button onclick="submitKmCorrection()" class="flex-1 py-3 bg-yellow-500 text-black rounded-xl font-bold">確認修正</button>
@@ -125,10 +126,8 @@
     <div id="returnModal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="card p-6 w-full max-w-sm border-t-4 border-blue-500">
             <h3 class="font-bold text-lg mb-4 text-blue-400">登記返回資料</h3>
-            <label class="text-xs text-gray-400">返回時間</label>
             <input type="datetime-local" id="modalReturnTime" class="mb-4">
-            <label class="text-xs text-gray-400">本次行駛總里程 (必填)</label>
-            <input type="number" id="modalReturnKm" step="0.1" class="mb-6" placeholder="請輸入正確里程數">
+            <input type="number" id="modalReturnKm" step="0.1" class="mb-6" placeholder="請輸入本次行駛總里程">
             <div class="flex gap-3">
                 <button onclick="document.getElementById('returnModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-700 rounded-xl">取消</button>
                 <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認還車</button>
@@ -136,7 +135,7 @@
         </div>
     </div>
 
-    <!-- 維修紀錄 Modal -->
+    <!-- 查看維修紀錄 Modal (含刪除功能) -->
     <div id="viewMaintainModal" class="fixed inset-0 bg-black/95 hidden flex flex-col p-4 z-50">
         <div class="flex justify-between items-center mb-4">
             <h3 class="font-bold text-xl text-yellow-400" id="viewMaintainTitle">維修紀錄歷史</h3>
@@ -151,6 +150,7 @@
                         <th class="p-2">項目內容</th>
                         <th class="p-2">里程</th>
                         <th class="p-2">金額</th>
+                        <th class="p-2 text-center">操作</th>
                     </tr>
                 </thead>
                 <tbody id="maintainLogTable" class="divide-y divide-gray-700"></tbody>
@@ -217,7 +217,6 @@
             if(!newKm) return;
             document.getElementById('correctKmModal').classList.add('hidden');
             await postAction({ action: 'correctTotalKm', car: correctionTargetCar, km: newKm });
-            alert(`${correctionTargetCar} 里程已修正為 ${newKm} km`);
         }
 
         function updateCarDropdown() {
@@ -284,7 +283,7 @@
         document.getElementById('confirmReturnBtn').onclick = async () => {
             const time = document.getElementById('modalReturnTime').value;
             const km = document.getElementById('modalReturnKm').value;
-            if(!km) { alert("請務必填寫最終里程數！"); return; }
+            if(!km) { alert("請填寫公里數"); return; }
             document.getElementById('returnModal').classList.add('hidden');
             await postAction({ action: 'updateReturn', id: currentEditingId, returnTime: time, km: km });
         };
@@ -306,6 +305,7 @@
         async function addMaintain() {
             const payload = {
                 action: 'addMaintain',
+                id: Date.now(), // 新增維修 ID 以供未來刪除使用
                 car: document.getElementById('mCar').value,
                 date: document.getElementById('mDate').value,
                 type: document.getElementById('mType').value,
@@ -313,29 +313,42 @@
                 km: document.getElementById('mKm').value,
                 price: document.getElementById('mPrice').value
             };
-            if(!payload.car || !payload.content) { alert("請填寫維修內容"); return; }
+            if(!payload.car || !payload.content) { alert("請填寫內容"); return; }
             await postAction(payload);
-            alert("新增成功");
         }
 
         function viewMaintain(car) {
-            document.getElementById('viewMaintainTitle').innerText = `${car} - 維修保養歷史`;
+            document.getElementById('viewMaintainTitle').innerText = `${car} - 維修歷史`;
             const tbody = document.getElementById('maintainLogTable');
             tbody.innerHTML = '';
+            const isAdmin = (currentRole === 'admin' || currentRole === 'supervisor');
             const filtered = maintains.filter(m => m.car === car);
-            if(filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">暫無維修紀錄</td></tr>'; }
-            else {
+            
+            if(filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">暫無紀錄</td></tr>';
+            } else {
                 filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(m => {
                     tbody.innerHTML += `<tr>
                         <td class="p-2">${formatDate(m.date, true)}</td>
-                        <td class="p-2"><span class="text-xs bg-gray-700 px-1 rounded">${m.type}</span></td>
+                        <td class="p-2">${m.type}</td>
                         <td class="p-2">${m.content}</td>
-                        <td class="p-2">${m.km} km</td>
+                        <td class="p-2">${m.km}km</td>
                         <td class="p-2 text-red-400">$${m.price}</td>
+                        <td class="p-2 text-center">
+                            ${isAdmin ? `<button onclick="deleteMaintain('${m.id}')" class="text-xs text-red-500 underline">刪除</button>` : '-'}
+                        </td>
                     </tr>`;
                 });
             }
             document.getElementById('viewMaintainModal').classList.remove('hidden');
+        }
+
+        async function deleteMaintain(mId) {
+            if(!confirm("確定要刪除這筆維修紀錄嗎？")) return;
+            await postAction({ action: 'deleteMaintain', id: mId });
+            // 重新刷新 Modal 內容
+            const currentCar = document.getElementById('viewMaintainTitle').innerText.split(' - ')[0];
+            viewMaintain(currentCar);
         }
 
         async function postAction(payload) {
@@ -351,7 +364,7 @@
             if(!d || d === '尚未返回') return d;
             const dt = new Date(d);
             const res = `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;
-            return onlyDate ? d.split('T')[0] : res;
+            return onlyDate ? d.toISOString().split('T')[0] : res;
         }
 
         function setNowTime() {
