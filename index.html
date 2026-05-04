@@ -21,7 +21,6 @@
 </head>
 <body class="min-h-screen">
 
-    <!-- 登入頁面 -->
     <div id="loginPage" class="flex flex-col items-center justify-center min-h-screen p-4">
         <h1 class="text-3xl font-bold mb-8 text-yellow-400 text-center tracking-widest">何鑫實業 - 公務車系統</h1>
         <div class="w-full max-w-xs space-y-4">
@@ -31,7 +30,6 @@
         </div>
     </div>
 
-    <!-- 主應用頁面 -->
     <div id="appPage" class="hidden p-4 max-w-6xl mx-auto">
         <div class="flex justify-between items-center mb-6">
             <div>
@@ -44,47 +42,34 @@
         <div id="kmDashboard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- 左側操作區 -->
             <div class="lg:col-span-1 space-y-6">
-                <!-- 出車登記 -->
                 <div class="card p-6 border-t-4 border-yellow-400">
                     <form id="regForm" class="space-y-4">
                         <h3 class="font-bold text-lg text-white">出車登記</h3>
                         <input type="datetime-local" id="outTime" required>
                         <input type="text" id="driver" placeholder="駕駛姓名" required>
-                        <select id="car" required><option value="">正在載入車輛...</option></select>
-                        <select id="vendorSelect" onchange="handleVendorChange()"><option value="">-- 快速選擇地點 (可選) --</option></select>
-                        <input type="number" id="kmInput" step="0.1" placeholder="里程 (若出車不確定可先不填)">
+                        <select id="car" required><option value="">載入中...</option></select>
+                        <select id="vendorSelect" onchange="handleVendorChange()"><option value="">-- 快速選擇地點 --</option></select>
+                        <input type="number" id="kmInput" step="0.1" placeholder="里程 (km)">
                         <textarea id="purpose" placeholder="目的說明" rows="2" required></textarea>
                         <button type="submit" class="w-full btn-yellow py-3 rounded-xl">提交登記單</button>
                     </form>
                 </div>
 
-                <!-- 維修紀錄新增 (僅管理員/主管) -->
                 <div id="maintainBox" class="card p-6 border-t-4 border-red-500 hidden">
                     <h3 class="font-bold text-lg text-white mb-4">新增維修保養</h3>
                     <div class="space-y-3">
                         <select id="mCar"></select>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="date" id="mDate">
-                            <select id="mType">
-                                <option value="定期保養">定期保養</option>
-                                <option value="零件維修">零件維修</option>
-                                <option value="輪胎更換">輪胎更換</option>
-                                <option value="其他">其他</option>
-                            </select>
-                        </div>
-                        <input type="text" id="mContent" placeholder="更換項目內容">
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="number" id="mKm" placeholder="當前里程">
-                            <input type="number" id="mPrice" placeholder="花費金額">
-                        </div>
-                        <button onclick="addMaintain()" class="w-full bg-red-600 py-3 rounded-xl font-bold">送出維修紀錄</button>
+                        <div class="grid grid-cols-2 gap-2"><input type="date" id="mDate"><select id="mType">
+                            <option value="定期保養">定期保養</option><option value="零件維修">零件維修</option><option value="其他">其他</option>
+                        </select></div>
+                        <input type="text" id="mContent" placeholder="內容">
+                        <div class="grid grid-cols-2 gap-2"><input type="number" id="mKm" placeholder="里程"><input type="number" id="mPrice" placeholder="金額"></div>
+                        <button onclick="addMaintain()" class="w-full bg-red-600 py-3 rounded-xl font-bold">送出</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 右側表格區 -->
             <div class="lg:col-span-2">
                 <div class="card overflow-hidden">
                     <div class="p-4 bg-[#252525] flex justify-between items-center border-b border-gray-800">
@@ -94,12 +79,7 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm text-left">
                             <thead class="bg-[#2a2a2a] text-yellow-400 text-[11px] uppercase">
-                                <tr>
-                                    <th class="p-4">時間</th>
-                                    <th class="p-4">車輛/里程/目的</th>
-                                    <th class="p-4">狀態</th>
-                                    <th class="p-4 text-center">操作</th>
-                                </tr>
+                                <tr><th class="p-4">時間</th><th class="p-4">車輛/里程/目的</th><th class="p-4">狀態</th><th class="p-4 text-center">操作</th></tr>
                             </thead>
                             <tbody id="dataTable" class="divide-y divide-gray-800"></tbody>
                         </table>
@@ -109,49 +89,40 @@
         </div>
     </div>
 
-    <!-- 總里程校正 Modal -->
+    <!-- Modals -->
     <div id="correctKmModal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="card p-6 w-full max-w-sm border-t-4 border-yellow-500">
-            <h3 class="font-bold text-lg mb-2 text-yellow-400">總里程校正</h3>
-            <p id="correctCarName" class="text-sm text-gray-400 mb-4"></p>
-            <input type="number" id="newTotalKm" step="0.1" class="mb-6" placeholder="輸入儀表板總里程">
+            <h3 class="font-bold text-lg mb-2 text-yellow-400 text-center">總里程校正</h3>
+            <p id="correctCarName" class="text-sm text-gray-400 mb-4 text-center"></p>
+            <input type="number" id="newTotalKm" step="0.1" class="mb-6 text-center text-xl">
             <div class="flex gap-3">
                 <button onclick="document.getElementById('correctKmModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-700 rounded-xl">取消</button>
-                <button onclick="submitKmCorrection()" class="flex-1 py-3 bg-yellow-500 text-black rounded-xl font-bold">確認修正</button>
+                <button onclick="submitKmCorrection()" class="flex-1 py-3 bg-yellow-500 text-black rounded-xl font-bold">確認</button>
             </div>
         </div>
     </div>
 
-    <!-- 還車 Modal -->
     <div id="returnModal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="card p-6 w-full max-w-sm border-t-4 border-blue-500">
-            <h3 class="font-bold text-lg mb-4 text-blue-400">登記返回資料</h3>
+            <h3 class="font-bold text-lg mb-4 text-blue-400 text-center">登記返回</h3>
             <input type="datetime-local" id="modalReturnTime" class="mb-4">
-            <input type="number" id="modalReturnKm" step="0.1" class="mb-6" placeholder="請輸入本次行駛總里程">
+            <input type="number" id="modalReturnKm" step="0.1" class="mb-6 text-center" placeholder="本次行駛里程">
             <div class="flex gap-3">
                 <button onclick="document.getElementById('returnModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-700 rounded-xl">取消</button>
-                <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認還車</button>
+                <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認</button>
             </div>
         </div>
     </div>
 
-    <!-- 查看維修紀錄 Modal (含刪除功能) -->
     <div id="viewMaintainModal" class="fixed inset-0 bg-black/95 hidden flex flex-col p-4 z-50">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-xl text-yellow-400" id="viewMaintainTitle">維修紀錄歷史</h3>
+            <h3 class="font-bold text-xl text-yellow-400" id="viewMaintainTitle">維修歷史</h3>
             <button onclick="document.getElementById('viewMaintainModal').classList.add('hidden')" class="text-white bg-gray-700 px-4 py-2 rounded-lg">關閉</button>
         </div>
         <div class="overflow-y-auto flex-1">
             <table class="w-full text-sm">
                 <thead class="bg-gray-800 sticky top-0">
-                    <tr>
-                        <th class="p-2">日期</th>
-                        <th class="p-2">類別</th>
-                        <th class="p-2">項目內容</th>
-                        <th class="p-2">里程</th>
-                        <th class="p-2">金額</th>
-                        <th class="p-2 text-center">操作</th>
-                    </tr>
+                    <tr><th class="p-2">日期</th><th class="p-2">類別</th><th class="p-2">項目</th><th class="p-2">里程</th><th class="p-2">金額</th><th class="p-2 text-center">操作</th></tr>
                 </thead>
                 <tbody id="maintainLogTable" class="divide-y divide-gray-700"></tbody>
             </table>
@@ -161,8 +132,7 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymtLzzdKt8lrW-6trqIPXiOaQmT5aUnppVAsRcUofs4rHaaW6QG0fbfX7gO-tYipa5YQ/exec"; 
         let currentRole = "staff", records = [], carTotals = {}, vendors = [], maintains = [];
-        let currentEditingId = null;
-        let correctionTargetCar = "";
+        let currentEditingId = null, correctionTargetCar = "";
 
         function loginAs(role) {
             currentRole = role;
@@ -180,7 +150,7 @@
                 const data = await res.json();
                 records = data.records; carTotals = data.totals; vendors = data.vendors; maintains = data.maintains;
                 updateDashboard(); updateCarDropdown(); updateVendorDropdown(); renderTable();
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Fetch Error:", e); }
             document.getElementById('syncLoader').classList.add('hidden');
         }
 
@@ -191,45 +161,84 @@
                 const info = carTotals[car];
                 const isAdmin = (currentRole === 'admin' || currentRole === 'supervisor');
                 container.innerHTML += `
-                    <div class="card p-4 border-l-4 border-yellow-400">
+                    <div class="card p-4 border-l-4 border-yellow-400 shadow-lg">
                         <div class="flex justify-between items-start">
-                            <div class="text-[10px] text-gray-500">${car}</div>
+                            <div class="text-[10px] text-gray-500 font-bold">${car}</div>
                             <div class="flex gap-2">
-                                ${isAdmin ? `<button onclick="openCorrection('${car}')" class="text-[10px] text-blue-400 underline">校正</button>` : ''}
-                                <button onclick="viewMaintain('${car}')" class="text-[10px] text-yellow-400 underline">查看維修</button>
+                                ${isAdmin ? `<button onclick="openCorrection('${car}')" class="text-[10px] text-blue-400 hover:text-blue-200">校正</button>` : ''}
+                                <button onclick="viewMaintain('${car}')" class="text-[10px] text-yellow-400 hover:text-yellow-200">維修</button>
                             </div>
                         </div>
-                        <div class="text-2xl font-bold text-yellow-400">${Number(info.km).toLocaleString()} <span class="text-xs">km</span></div>
-                        <div class="mt-2 text-[10px] text-gray-400">下次保養: ${info.nextService}</div>
+                        <div class="text-2xl font-bold text-yellow-400 my-1">${Number(info.km).toLocaleString()} <span class="text-xs">km</span></div>
+                        <div class="text-[10px] text-gray-400">下次保養: ${info.nextService || '-'}</div>
                     </div>`;
             }
         }
 
-        function openCorrection(car) {
-            correctionTargetCar = car;
-            document.getElementById('correctCarName').innerText = `目前車輛：${car}`;
-            document.getElementById('newTotalKm').value = carTotals[car].km;
-            document.getElementById('correctKmModal').classList.remove('hidden');
+        function viewMaintain(car) {
+            try {
+                document.getElementById('viewMaintainTitle').innerText = `${car} - 維修歷史`;
+                const tbody = document.getElementById('maintainLogTable');
+                tbody.innerHTML = '';
+                const isAdmin = (currentRole === 'admin' || currentRole === 'supervisor');
+                const filtered = (maintains || []).filter(m => m && String(m.car).includes(car));
+                
+                if(filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">暫無紀錄</td></tr>';
+                } else {
+                    filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(m => {
+                        const d = m.date ? m.date.split('T')[0] : '-';
+                        tbody.innerHTML += `
+                            <tr>
+                                <td class="p-2 text-gray-300">${d}</td>
+                                <td class="p-2 text-xs">${m.type}</td>
+                                <td class="p-2">${m.content}</td>
+                                <td class="p-2 text-blue-400">${Number(m.km).toLocaleString()}km</td>
+                                <td class="p-2 text-red-400">$${Number(m.price).toLocaleString()}</td>
+                                <td class="p-2 text-center">
+                                    ${isAdmin ? `<button onclick="deleteMaintain('${m.id}')" class="text-xs text-red-500 underline">刪除</button>` : '-'}
+                                </td>
+                            </tr>`;
+                    });
+                }
+                document.getElementById('viewMaintainModal').classList.remove('hidden');
+            } catch(e) { alert("開啟失敗，請檢查資料格式"); }
         }
 
-        async function submitKmCorrection() {
-            const newKm = document.getElementById('newTotalKm').value;
-            if(!newKm) return;
-            document.getElementById('correctKmModal').classList.add('hidden');
-            await postAction({ action: 'correctTotalKm', car: correctionTargetCar, km: newKm });
+        async function deleteMaintain(mId) {
+            if(!confirm("確定要刪除這筆維修紀錄嗎？")) return;
+            const currentCar = document.getElementById('viewMaintainTitle').innerText.split(' - ')[0];
+            document.getElementById('viewMaintainModal').classList.add('hidden');
+            await postAction({ action: 'deleteMaintain', id: mId });
+            viewMaintain(currentCar);
+        }
+
+        async function postAction(payload) {
+            document.getElementById('syncLoader').classList.remove('hidden');
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+                await fetchData();
+            } catch(e) { alert("網路通訊失敗"); }
+            document.getElementById('syncLoader').classList.add('hidden');
+        }
+
+        function formatDate(d, onlyDate = false) {
+            if(!d || d === '尚未返回') return d;
+            const dt = new Date(d);
+            const res = `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;
+            return onlyDate ? dt.toISOString().split('T')[0] : res;
         }
 
         function updateCarDropdown() {
-            const selects = [document.getElementById('car'), document.getElementById('mCar')];
-            selects.forEach(s => {
-                s.innerHTML = '<option value="">-- 選擇車輛 --</option>';
+            [document.getElementById('car'), document.getElementById('mCar')].forEach(s => {
+                s.innerHTML = '<option value="">-- 選擇車號 --</option>';
                 for (let car in carTotals) s.innerHTML += `<option value="${car}">${car}</option>`;
             });
         }
 
         function updateVendorDropdown() {
             const select = document.getElementById('vendorSelect');
-            select.innerHTML = '<option value="">-- 快速選擇地點 (可選) --</option>';
+            select.innerHTML = '<option value="">-- 快速選擇地點 --</option>';
             vendors.forEach(v => {
                 const rtKm = (parseFloat(v.km) * 2).toFixed(1);
                 select.innerHTML += `<option value="${rtKm}">${v.name} (${rtKm}km)</option>`;
@@ -244,68 +253,48 @@
             }
         }
 
-        function renderTable() {
-            const tbody = document.getElementById('dataTable');
-            tbody.innerHTML = '';
-            records.sort((a,b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
-                const isAdmin = currentRole === 'admin' || currentRole === 'supervisor';
-                const status = row.status || "待覆核";
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="p-4 text-[11px]">
-                        <div class="text-white">${formatDate(row.outTime)}</div>
-                        <div class="text-gray-500">${row.returnTime ? formatDate(row.returnTime) : '尚未返回'}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-bold">${row.car} <span class="text-[10px] text-gray-400">(${row.driver})</span></div>
-                        <div class="text-blue-400 font-bold">${row.km} km</div>
-                        <div class="text-[11px] text-gray-400 truncate max-w-[150px]">目：${row.purpose}</div>
-                    </td>
-                    <td class="p-4"><span class="status-badge ${status === '已結案' ? 'status-approved' : 'status-pending'}">${status}</span></td>
-                    <td class="p-4 text-center">
-                        <div class="flex flex-col gap-2 items-center">
-                            ${(isAdmin && status === '待覆核') ? `<button onclick="postAction({action:'approve', id:'${row.id}'})" class="w-16 bg-yellow-400 text-black py-1.5 rounded text-[10px] font-bold">覆核</button>` : ''}
-                            ${(currentRole !== 'supervisor' && status === '已出車') ? `<button onclick="openReturnModal('${row.id}')" class="w-16 bg-blue-600 py-1.5 rounded text-[10px] font-bold text-white">還車</button>` : ''}
-                            ${currentRole === 'admin' ? `<button onclick="postAction({action:'delete', id:'${row.id}'})" class="text-[10px] text-red-500">刪除</button>` : ''}
-                        </div>
-                    </td>`;
-                tbody.appendChild(tr);
-            });
+        function openCorrection(car) {
+            correctionTargetCar = car;
+            document.getElementById('correctCarName').innerText = car;
+            document.getElementById('newTotalKm').value = carTotals[car].km;
+            document.getElementById('correctKmModal').classList.remove('hidden');
+        }
+
+        async function submitKmCorrection() {
+            const newKm = document.getElementById('newTotalKm').value;
+            document.getElementById('correctKmModal').classList.add('hidden');
+            await postAction({ action: 'correctTotalKm', car: correctionTargetCar, km: newKm });
         }
 
         function openReturnModal(id) {
             currentEditingId = id;
-            document.getElementById('modalReturnTime').value = new Date().toISOString().slice(0, 16);
-            document.getElementById('modalReturnKm').value = ""; 
+            document.getElementById('modalReturnTime').value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             document.getElementById('returnModal').classList.remove('hidden');
         }
 
         document.getElementById('confirmReturnBtn').onclick = async () => {
-            const time = document.getElementById('modalReturnTime').value;
             const km = document.getElementById('modalReturnKm').value;
-            if(!km) { alert("請填寫公里數"); return; }
+            if(!km) return alert("請填寫里程");
             document.getElementById('returnModal').classList.add('hidden');
-            await postAction({ action: 'updateReturn', id: currentEditingId, returnTime: time, km: km });
+            await postAction({ action: 'updateReturn', id: currentEditingId, returnTime: document.getElementById('modalReturnTime').value, km: km });
         };
 
         document.getElementById('regForm').onsubmit = async (e) => {
             e.preventDefault();
-            const payload = {
+            await postAction({
                 action: 'append', id: Date.now(),
                 outTime: document.getElementById('outTime').value,
                 driver: document.getElementById('driver').value,
                 car: document.getElementById('car').value,
                 km: document.getElementById('kmInput').value,
                 purpose: document.getElementById('purpose').value
-            };
-            await postAction(payload);
+            });
             e.target.reset(); setNowTime();
         };
 
         async function addMaintain() {
-            const payload = {
-                action: 'addMaintain',
-                id: Date.now(), // 新增維修 ID 以供未來刪除使用
+            const p = {
+                action: 'addMaintain', id: Date.now(),
                 car: document.getElementById('mCar').value,
                 date: document.getElementById('mDate').value,
                 type: document.getElementById('mType').value,
@@ -313,58 +302,34 @@
                 km: document.getElementById('mKm').value,
                 price: document.getElementById('mPrice').value
             };
-            if(!payload.car || !payload.content) { alert("請填寫內容"); return; }
-            await postAction(payload);
+            if(!p.car || !p.content) return alert("請完整填寫");
+            await postAction(p);
+            alert("維修紀錄已新增");
         }
 
-        function viewMaintain(car) {
-            document.getElementById('viewMaintainTitle').innerText = `${car} - 維修歷史`;
-            const tbody = document.getElementById('maintainLogTable');
+        function renderTable() {
+            const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
-            const isAdmin = (currentRole === 'admin' || currentRole === 'supervisor');
-            const filtered = maintains.filter(m => m.car === car);
-            
-            if(filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">暫無紀錄</td></tr>';
-            } else {
-                filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(m => {
-                    tbody.innerHTML += `<tr>
-                        <td class="p-2">${formatDate(m.date, true)}</td>
-                        <td class="p-2">${m.type}</td>
-                        <td class="p-2">${m.content}</td>
-                        <td class="p-2">${m.km}km</td>
-                        <td class="p-2 text-red-400">$${m.price}</td>
-                        <td class="p-2 text-center">
-                            ${isAdmin ? `<button onclick="deleteMaintain('${m.id}')" class="text-xs text-red-500 underline">刪除</button>` : '-'}
-                        </td>
-                    </tr>`;
-                });
-            }
-            document.getElementById('viewMaintainModal').classList.remove('hidden');
-        }
-
-        async function deleteMaintain(mId) {
-            if(!confirm("確定要刪除這筆維修紀錄嗎？")) return;
-            await postAction({ action: 'deleteMaintain', id: mId });
-            // 重新刷新 Modal 內容
-            const currentCar = document.getElementById('viewMaintainTitle').innerText.split(' - ')[0];
-            viewMaintain(currentCar);
-        }
-
-        async function postAction(payload) {
-            document.getElementById('syncLoader').classList.remove('hidden');
-            try {
-                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                await fetchData();
-            } catch(e) { alert("操作失敗"); }
-            document.getElementById('syncLoader').classList.add('hidden');
-        }
-
-        function formatDate(d, onlyDate = false) {
-            if(!d || d === '尚未返回') return d;
-            const dt = new Date(d);
-            const res = `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;
-            return onlyDate ? d.toISOString().split('T')[0] : res;
+            records.sort((a,b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
+                const isAdmin = currentRole === 'admin' || currentRole === 'supervisor';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-4 text-[11px]"><div class="text-white">${formatDate(row.outTime)}</div><div class="text-gray-500">${formatDate(row.returnTime)}</div></td>
+                    <td class="p-4">
+                        <div class="font-bold">${row.car} <span class="text-[10px] text-gray-500">(${row.driver})</span></div>
+                        <div class="text-blue-400 font-bold">${row.km} km</div>
+                        <div class="text-[10px] text-gray-400 truncate max-w-[120px]">${row.purpose}</div>
+                    </td>
+                    <td class="p-4"><span class="status-badge ${row.status === '已結案' ? 'status-approved' : 'status-pending'}">${row.status}</span></td>
+                    <td class="p-4 text-center">
+                        <div class="flex flex-col gap-1 items-center">
+                            ${(isAdmin && row.status === '待覆核') ? `<button onclick="postAction({action:'approve', id:'${row.id}'})" class="w-14 bg-yellow-400 text-black py-1 rounded text-[10px] font-bold">覆核</button>` : ''}
+                            ${(currentRole !== 'supervisor' && row.status === '已出車') ? `<button onclick="openReturnModal('${row.id}')" class="w-14 bg-blue-600 py-1 rounded text-[10px] font-bold text-white">還車</button>` : ''}
+                            ${currentRole === 'admin' ? `<button onclick="postAction({action:'delete', id:'${row.id}'})" class="text-[10px] text-red-500">刪</button>` : ''}
+                        </div>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
         }
 
         function setNowTime() {
