@@ -49,8 +49,8 @@
                         <input type="datetime-local" id="outTime" required>
                         <input type="text" id="driver" placeholder="駕駛姓名" required>
                         <select id="car" required><option value="">載入中...</option></select>
-                        <select id="vendorSelect" onchange="handleVendorChange()"><option value="">-- 快速選擇地點 --</option></select>
-                        <input type="number" id="kmInput" step="0.1" placeholder="里程 (km)">
+                        <select id="vendorSelect" onchange="handleVendorChange()"><option value="">-- 快速選擇地點 (可不選) --</option></select>
+                        <input type="number" id="kmInput" step="0.1" placeholder="里程 (若為不定期出差，此處請留空)">
                         <textarea id="purpose" placeholder="目的說明" rows="2" required></textarea>
                         <button type="submit" class="w-full btn-yellow py-3 rounded-xl">提交登記單</button>
                     </form>
@@ -89,7 +89,6 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="correctKmModal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="card p-6 w-full max-w-sm border-t-4 border-yellow-500">
             <h3 class="font-bold text-lg mb-2 text-yellow-400 text-center">總里程校正</h3>
@@ -106,7 +105,16 @@
         <div class="card p-6 w-full max-w-sm border-t-4 border-blue-500">
             <h3 class="font-bold text-lg mb-4 text-blue-400 text-center">登記返回</h3>
             <input type="datetime-local" id="modalReturnTime" class="mb-4">
-            <input type="number" id="modalReturnKm" step="0.1" class="mb-6 text-center" placeholder="本次行駛里程">
+            
+            <div id="modalKmWrapper" class="mb-6">
+                <label class="text-xs text-gray-400 block mb-1">未設定地點，請輸入單日來回公里數：</label>
+                <input type="number" id="modalReturnKm" step="0.1" class="text-center" placeholder="填寫單日里程 (系統將自動依天數倍增)">
+            </div>
+            
+            <div id="modalKmTip" class="text-xs text-green-400 text-center mb-6 hidden">
+                已設定固定地點里程，系統將自動依出差天數累加，不需輸入里程。
+            </div>
+
             <div class="flex gap-3">
                 <button onclick="document.getElementById('returnModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-700 rounded-xl">取消</button>
                 <button id="confirmReturnBtn" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold">確認</button>
@@ -238,7 +246,7 @@
 
         function updateVendorDropdown() {
             const select = document.getElementById('vendorSelect');
-            select.innerHTML = '<option value="">-- 快速選擇地點 --</option>';
+            select.innerHTML = '<option value="">-- 快速選擇地點 (可不選) --</option>';
             vendors.forEach(v => {
                 const rtKm = (parseFloat(v.km) * 2).toFixed(1);
                 select.innerHTML += `<option value="${rtKm}">${v.name} (${rtKm}km)</option>`;
@@ -266,17 +274,49 @@
             await postAction({ action: 'correctTotalKm', car: correctionTargetCar, km: newKm });
         }
 
+        // 開啟還車視窗：判斷出車時是否有設定里程
         function openReturnModal(id) {
             currentEditingId = id;
-            document.getElementById('modalReturnTime').value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            
+            // 找出此筆出車紀錄
+            const matchedRecord = records.find(r => String(r.id) === String(id));
+            const currentKm = matchedRecord ? parseFloat(matchedRecord.km) : 0;
+            
+            // 填入當前時間
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('modalReturnTime').value = now.toISOString().slice(0, 16);
+            
+            // 判斷邏輯：如果出車時里程是 0 或空白，代表沒有地點，需要填里程
+            if (currentKm === 0 || isNaN(currentKm)) {
+                document.getElementById('modalKmWrapper').classList.remove('hidden');
+                document.getElementById('modalKmTip').classList.add('hidden');
+                document.getElementById('modalReturnKm').value = ""; 
+            } else {
+                // 如果原本就有里程，直接隱藏輸入框，顯示提示即可
+                document.getElementById('modalKmWrapper').classList.add('hidden');
+                document.getElementById('modalKmTip').classList.remove('hidden');
+                document.getElementById('modalReturnKm').value = "0"; // 放防呆值，後端不會使用它
+            }
+            
             document.getElementById('returnModal').classList.remove('hidden');
         }
 
         document.getElementById('confirmReturnBtn').onclick = async () => {
-            const km = document.getElementById('modalReturnKm').value;
-            if(!km) return alert("請填寫里程");
+            const kmInput = document.getElementById('modalReturnKm').value;
+            const isKmWrapperHidden = document.getElementById('modalKmWrapper').classList.contains('hidden');
+            
+            if(!isKmWrapperHidden && !kmInput) {
+                return alert("此單出車時無地點里程，請輸入本次單日里程");
+            }
+            
             document.getElementById('returnModal').classList.add('hidden');
-            await postAction({ action: 'updateReturn', id: currentEditingId, returnTime: document.getElementById('modalReturnTime').value, km: km });
+            await postAction({ 
+                action: 'updateReturn', 
+                id: currentEditingId, 
+                returnTime: document.getElementById('modalReturnTime').value, 
+                km: kmInput || 0 
+            });
         };
 
         document.getElementById('regForm').onsubmit = async (e) => {
