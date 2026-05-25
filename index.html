@@ -73,7 +73,7 @@
             <div class="lg:col-span-2">
                 <div class="card overflow-hidden">
                     <div class="p-4 bg-[#252525] flex justify-between items-center border-b border-gray-800">
-                        <span class="font-bold text-sm text-yellow-400">使用登記簿</span>
+                        <span class="font-bold text-sm text-yellow-400">使用登記簿 (未結案單據優先置頂)</span>
                         <div id="syncLoader" class="loader hidden"></div>
                     </div>
                     <div class="overflow-x-auto">
@@ -274,49 +274,33 @@
             await postAction({ action: 'correctTotalKm', car: correctionTargetCar, km: newKm });
         }
 
-        // 開啟還車視窗：判斷出車時是否有設定里程
         function openReturnModal(id) {
             currentEditingId = id;
-            
-            // 找出此筆出車紀錄
             const matchedRecord = records.find(r => String(r.id) === String(id));
             const currentKm = matchedRecord ? parseFloat(matchedRecord.km) : 0;
             
-            // 填入當前時間
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('modalReturnTime').value = now.toISOString().slice(0, 16);
             
-            // 判斷邏輯：如果出車時里程是 0 或空白，代表沒有地點，需要填里程
             if (currentKm === 0 || isNaN(currentKm)) {
                 document.getElementById('modalKmWrapper').classList.remove('hidden');
                 document.getElementById('modalKmTip').classList.add('hidden');
                 document.getElementById('modalReturnKm').value = ""; 
             } else {
-                // 如果原本就有里程，直接隱藏輸入框，顯示提示即可
                 document.getElementById('modalKmWrapper').classList.add('hidden');
                 document.getElementById('modalKmTip').classList.remove('hidden');
-                document.getElementById('modalReturnKm').value = "0"; // 放防呆值，後端不會使用它
+                document.getElementById('modalReturnKm').value = "0"; 
             }
-            
             document.getElementById('returnModal').classList.remove('hidden');
         }
 
         document.getElementById('confirmReturnBtn').onclick = async () => {
             const kmInput = document.getElementById('modalReturnKm').value;
             const isKmWrapperHidden = document.getElementById('modalKmWrapper').classList.contains('hidden');
-            
-            if(!isKmWrapperHidden && !kmInput) {
-                return alert("此單出車時無地點里程，請輸入本次單日里程");
-            }
-            
+            if(!isKmWrapperHidden && !kmInput) return alert("請輸入本次單日里程");
             document.getElementById('returnModal').classList.add('hidden');
-            await postAction({ 
-                action: 'updateReturn', 
-                id: currentEditingId, 
-                returnTime: document.getElementById('modalReturnTime').value, 
-                km: kmInput || 0 
-            });
+            await postAction({ action: 'updateReturn', id: currentEditingId, returnTime: document.getElementById('modalReturnTime').value, km: kmInput || 0 });
         };
 
         document.getElementById('regForm').onsubmit = async (e) => {
@@ -347,12 +331,37 @@
             alert("維修紀錄已新增");
         }
 
+        // 核心更新：智慧雙重排序表格 (未結案優先置頂)
         function renderTable() {
             const tbody = document.getElementById('dataTable');
             tbody.innerHTML = '';
-            records.sort((a,b) => new Date(b.outTime) - new Date(a.outTime)).forEach(row => {
+            
+            // 複製一份陣列進行排序，避免破壞原始資料
+            const sortedRecords = [...records];
+            
+            sortedRecords.sort((a, b) => {
+                const aOrder = (a.status === '已出車' || a.status === '待覆核') ? 0 : 1;
+                const bOrder = (b.status === '已出車' || b.status === '待覆核') ? 0 : 1;
+                
+                // 1. 先比對狀態群組 (未結案 0 排在 已結案 1 前面)
+                if (aOrder !== bOrder) {
+                    return aOrder - bOrder;
+                }
+                // 2. 如果狀態群組相同，則比對出車時間 (由新到舊排序)
+                return new Date(b.outTime) - new Date(a.outTime);
+            });
+
+            sortedRecords.forEach(row => {
                 const isAdmin = currentRole === 'admin' || currentRole === 'supervisor';
                 const tr = document.createElement('tr');
+                
+                // 未結案的資料列加上微弱的高亮背景，方便視覺區隔
+                if (row.status === '已出車' || row.status === '待覆核') {
+                    tr.className = "bg-yellow-500/5 border-b border-gray-800";
+                } else {
+                    tr.className = "border-b border-gray-800";
+                }
+
                 tr.innerHTML = `
                     <td class="p-4 text-[11px]"><div class="text-white">${formatDate(row.outTime)}</div><div class="text-gray-500">${formatDate(row.returnTime)}</div></td>
                     <td class="p-4">
@@ -363,9 +372,9 @@
                     <td class="p-4"><span class="status-badge ${row.status === '已結案' ? 'status-approved' : 'status-pending'}">${row.status}</span></td>
                     <td class="p-4 text-center">
                         <div class="flex flex-col gap-1 items-center">
-                            ${(isAdmin && row.status === '待覆核') ? `<button onclick="postAction({action:'approve', id:'${row.id}'})" class="w-14 bg-yellow-400 text-black py-1 rounded text-[10px] font-bold">覆核</button>` : ''}
-                            ${(currentRole !== 'supervisor' && row.status === '已出車') ? `<button onclick="openReturnModal('${row.id}')" class="w-14 bg-blue-600 py-1 rounded text-[10px] font-bold text-white">還車</button>` : ''}
-                            ${currentRole === 'admin' ? `<button onclick="postAction({action:'delete', id:'${row.id}'})" class="text-[10px] text-red-500">刪</button>` : ''}
+                            ${(isAdmin && row.status === '待覆核') ? `<button onclick="postAction({action:'approve', id:'${row.id}'})" class="w-14 bg-yellow-400 text-black py-1 rounded text-[10px] font-bold shadow">覆核</button>` : ''}
+                            ${(currentRole !== 'supervisor' && row.status === '已出車') ? `<button onclick="openReturnModal('${row.id}')" class="w-14 bg-blue-600 py-1 rounded text-[10px] font-bold text-white shadow">還車</button>` : ''}
+                            ${currentRole === 'admin' ? `<button onclick="postAction({action:'delete', id:'${row.id}'})" class="text-[10px] text-red-500 hover:underline">刪</button>` : ''}
                         </div>
                     </td>`;
                 tbody.appendChild(tr);
